@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  start       DateTime
+  end         DateTime
+  color       String   @default("#3b82f6")
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Task {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  deadline       DateTime
+  priority       String    @default("medium")
+  status         String    @default("pending")
+  estimatedHours Float?
+  color          String    @default("#8b5cf6")
+  templateId     String?
+  subtasks       SubTask[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model SubTask {
+  id             String    @id @default(cuid())
+  taskId         String
+  task           Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title          String
+  estimatedHours Float?
+  order          Int       @default(0)
+  status         String    @default("pending")
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model UserSettings {
+  id            String   @id @default("singleton")
+  workStartHour Int      @default(9)
+  workEndHour   Int      @default(21)
+  timezone      String   @default("Asia/Tokyo")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model TaskTemplate {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  estimatedHours  Float?
+  defaultSubtasks String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
