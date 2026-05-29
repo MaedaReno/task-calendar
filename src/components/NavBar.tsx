@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ListTodo, LayoutDashboard, Settings } from "lucide-react";
+import { ListTodo, LayoutDashboard, Settings } from "lucide-react";
 
 const links = [
   { href: "/", label: "今日", icon: LayoutDashboard },
-  { href: "/calendar", label: "予定", icon: CalendarDays },
   { href: "/tasks", label: "タスク", icon: ListTodo },
   { href: "/settings", label: "設定", icon: Settings },
 ];

@@ -7,22 +7,38 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import type { EventData, SubTaskData, TaskData } from "@/types";
 import dynamic from "next/dynamic";
+import AIInputPanel from "./AIInputPanel";
 
-const MiniCalendar = dynamic(() => import("./MiniCalendar"), { ssr: false });
+const ScheduleCalendar = dynamic(() => import("./ScheduleCalendar"), { ssr: false });
+const TaskCalendar = dynamic(() => import("./TaskCalendar"), { ssr: false });
+
+type CalendarView = "schedule" | "task";
 
 export default function Dashboard() {
   const [events, setEvents] = useState<EventData[]>([]);
   const [subtasks, setSubtasks] = useState<(SubTaskData & { taskColor: string; taskTitle: string })[]>([]);
   const [comment, setComment] = useState<string | null>(null);
   const [commentLoading, setCommentLoading] = useState(true);
+  const [calendarView, setCalendarView] = useState<CalendarView>("schedule");
+  const [refresh, setRefresh] = useState(0);
 
   const today = new Date();
   const todayStr = format(today, "yyyy年M月d日 (E)", { locale: ja });
 
+  // AIコメントは初回のみ取得
   useEffect(() => {
-    const from = new Date(today);
+    fetch("/api/ai/dashboard-comment")
+      .then((r) => r.json())
+      .then((d) => setComment(d.comment ?? null))
+      .catch(() => setComment(null))
+      .finally(() => setCommentLoading(false));
+  }, []);
+
+  // 今日の予定・タスクは refresh のたびに再取得
+  useEffect(() => {
+    const from = new Date();
     from.setHours(0, 0, 0, 0);
-    const to = new Date(today);
+    const to = new Date();
     to.setHours(23, 59, 59, 999);
 
     fetch(`/api/events?from=${from.toISOString()}&to=${to.toISOString()}`)
@@ -45,14 +61,7 @@ export default function Dashboard() {
         setSubtasks(todaySubtasks);
       })
       .catch(() => {});
-
-    fetch("/api/ai/dashboard-comment")
-      .then((r) => r.json())
-      .then((d) => setComment(d.comment ?? null))
-      .catch(() => setComment(null))
-      .finally(() => setCommentLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refresh]);
 
   async function toggleSubtask(id: string, current: string) {
     const next = current === "done" ? "pending" : "done";
@@ -73,7 +82,6 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-6 py-8">
           <p className="text-indigo-300 text-xs font-semibold uppercase tracking-widest mb-1">Dashboard</p>
           <h1 className="text-3xl font-bold tracking-tight">{todayStr}</h1>
-
           {commentLoading ? (
             <div className="flex items-center gap-2 mt-4 text-sm text-indigo-300">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -92,8 +100,19 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-          {/* 左カラム: 今日の情報 */}
+          {/* 左カラム: AI入力 + 今日の情報 */}
           <div className="lg:col-span-2 space-y-5">
+
+            {/* AI 入力パネル */}
+            <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="font-semibold text-slate-700">AI 入力</h2>
+              </div>
+              <AIInputPanel onApproved={() => setRefresh((n) => n + 1)} />
+            </div>
 
             {/* 今日の予定 */}
             <div>
@@ -114,14 +133,8 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-2">
                   {events.map((e) => (
-                    <div
-                      key={e.id}
-                      className="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div
-                        className="w-1.5 h-12 rounded-full shrink-0"
-                        style={{ backgroundColor: e.color }}
-                      />
+                    <div key={e.id} className="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: e.color }} />
                       <div className="min-w-0">
                         <p className="font-medium text-sm text-slate-800 truncate">{e.title}</p>
                         <p className="text-xs text-slate-400">
@@ -156,48 +169,62 @@ export default function Dashboard() {
                   {subtasks.map((s) => (
                     <div
                       key={s.id}
-                      className={`bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 cursor-pointer shadow-sm hover:shadow-md transition-all ${
-                        s.status === "done" ? "opacity-50" : ""
-                      }`}
+                      className={`bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 cursor-pointer shadow-sm hover:shadow-md transition-all ${s.status === "done" ? "opacity-50" : ""}`}
                       onClick={() => toggleSubtask(s.id, s.status)}
                     >
-                      <div
-                        className="w-1.5 h-12 rounded-full shrink-0"
-                        style={{ backgroundColor: s.taskColor }}
-                      />
+                      <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: s.taskColor }} />
                       <div className="flex-1 min-w-0">
-                        <p
-                          className={`font-medium text-sm truncate ${
-                            s.status === "done" ? "line-through text-slate-400" : "text-slate-800"
-                          }`}
-                        >
+                        <p className={`font-medium text-sm truncate ${s.status === "done" ? "line-through text-slate-400" : "text-slate-800"}`}>
                           {s.title}
                         </p>
                         <p className="text-xs text-slate-400">{s.taskTitle}</p>
                       </div>
                       {s.estimatedHours && (
-                        <Badge variant="outline" className="text-xs shrink-0 border-slate-200">
-                          {s.estimatedHours}h
-                        </Badge>
+                        <Badge variant="outline" className="text-xs shrink-0 border-slate-200">{s.estimatedHours}h</Badge>
                       )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
           </div>
 
-          {/* 右カラム: カレンダー */}
-          <div className="lg:col-span-3">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <CalendarDays className="w-4 h-4 text-indigo-600" />
-              </div>
-              <h2 className="font-semibold text-slate-700">カレンダー</h2>
+          {/* 右カラム: カレンダー切り替え */}
+          <div className="lg:col-span-3 space-y-3">
+
+            {/* タブ切り替え */}
+            <div className="bg-white rounded-xl border border-slate-100 shadow-sm flex overflow-hidden">
+              <button
+                onClick={() => setCalendarView("schedule")}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                  calendarView === "schedule"
+                    ? "text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/60"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <CalendarDays className="w-4 h-4" />
+                予定カレンダー
+              </button>
+              <button
+                onClick={() => setCalendarView("task")}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                  calendarView === "task"
+                    ? "text-violet-600 border-b-2 border-violet-600 bg-violet-50/60"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <ListTodo className="w-4 h-4" />
+                タスクカレンダー
+              </button>
             </div>
-            <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden p-3">
-              <MiniCalendar />
-            </div>
+
+            {/* カレンダー本体 */}
+            {calendarView === "schedule"
+              ? <ScheduleCalendar key={`schedule-${refresh}`} />
+              : <TaskCalendar key={`task-${refresh}`} />
+            }
+
           </div>
 
         </div>
