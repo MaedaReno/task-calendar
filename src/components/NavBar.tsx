@@ -14,17 +14,19 @@ const links = [
 export default function NavBar() {
   const pathname = usePathname();
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-slate-900 sticky top-0 z-50 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 flex items-center gap-1 h-14">
-        <span className="font-bold text-lg text-indigo-600 mr-4">AI Calendar</span>
+        <span className="font-bold text-lg bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent mr-6">
+          AI Calendar
+        </span>
         {links.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all
               ${pathname === href
-                ? "bg-indigo-50 text-indigo-700"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
               }`}
           >
             <Icon className="w-4 h-4" />

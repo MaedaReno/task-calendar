@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja" className={`${geist.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-gray-50 antialiased">
+      <body className="min-h-full flex flex-col bg-slate-50 antialiased">
         <NavBar />
         <main className="flex-1">{children}</main>
         <Toaster richColors position="top-right" />

@@ -1,4 +1,6 @@
 import { NextRequest } from "next/server";
+
+export const maxDuration = 60;
 import { z } from "zod";
 import { getModel } from "@/lib/gemini";
 import { reportPrompt } from "@/lib/ai-prompts";
