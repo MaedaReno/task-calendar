@@ -25,6 +25,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   task?: TaskData | null;
+  defaultDeadline?: string;
   onSaved: () => void;
 }
 
@@ -36,7 +37,7 @@ const COLORS = [
   { label: "橙", value: "#f97316" },
 ];
 
-export default function TaskModal({ open, onClose, task, onSaved }: Props) {
+export default function TaskModal({ open, onClose, task, defaultDeadline, onSaved }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -63,12 +64,12 @@ export default function TaskModal({ open, onClose, task, onSaved }: Props) {
     } else {
       setTitle("");
       setDescription("");
-      setDeadline("");
+      setDeadline(defaultDeadline ?? "");
       setPriority("medium");
       setEstimatedHours("");
       setColor("#8b5cf6");
     }
-  }, [task, open]);
+  }, [task, defaultDeadline, open]);
 
   function applyTemplate(id: string | null) {
     if (!id) return;

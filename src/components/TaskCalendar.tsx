@@ -7,9 +7,12 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { toast } from "sonner";
 import type { TaskData } from "@/types";
+import TaskModal from "./TaskModal";
 
 export default function TaskCalendar() {
   const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [defaultDeadline, setDefaultDeadline] = useState<string | undefined>();
 
   async function fetchTasks() {
     const res = await fetch("/api/tasks");
@@ -50,6 +53,11 @@ export default function TaskCalendar() {
         buttonText={{ today: "今日", month: "月", week: "週", day: "日" }}
         events={calendarEvents}
         editable
+        dateClick={(info) => {
+          // 日付クリックでタスク追加モーダルを開く
+          setDefaultDeadline(`${info.dateStr}T23:59`);
+          setModalOpen(true);
+        }}
         eventDrop={async (info) => {
           const ev = info.event;
           const res = await fetch(`/api/subtasks/${ev.id}`, {
@@ -102,8 +110,17 @@ export default function TaskCalendar() {
         slotMaxTime="24:00:00"
       />
       <p className="text-xs text-gray-400 mt-2 text-center">
-        クリックで完了/未完了を切り替え・ドラッグで再スケジュール
+        日付クリックでタスク追加・イベントクリックで完了切り替え・ドラッグで再スケジュール
       </p>
+      <TaskModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        defaultDeadline={defaultDeadline}
+        onSaved={() => {
+          setModalOpen(false);
+          fetchTasks();
+        }}
+      />
     </div>
   );
 }

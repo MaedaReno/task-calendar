@@ -25,6 +25,12 @@ interface Props {
   onSaved: () => void;
 }
 
+// UTC日時文字列 → JST の YYYY-MM-DD 文字列に変換
+function toJSTDateStr(utcStr: string): string {
+  const jst = new Date(new Date(utcStr).getTime() + 9 * 60 * 60 * 1000);
+  return jst.toISOString().slice(0, 10);
+}
+
 export default function EventModal({
   open,
   onClose,
@@ -35,6 +41,7 @@ export default function EventModal({
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [isAllDay, setIsAllDay] = useState(false);
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [color, setColor] = useState("#3b82f6");
@@ -55,11 +62,13 @@ export default function EventModal({
       setTitle(event.title);
       setStart(event.start.slice(0, 16));
       setEnd(event.end.slice(0, 16));
+      setIsAllDay(event.allDay ?? false);
       setDescription(event.description ?? "");
       setLocation(event.location ?? "");
       setColor(event.color);
     } else {
       setTitle("");
+      setIsAllDay(false);
       setDescription("");
       setLocation("");
       setColor("#3b82f6");
@@ -97,6 +106,7 @@ export default function EventModal({
       setStart(data.start ? data.start.slice(0, 16) : "");
       setEnd(data.end ? data.end.slice(0, 16) : "");
       setDescription(data.description ?? "");
+      setIsAllDay(false);
       toast.success("予定を解析しました");
     } catch {
       toast.error("AIの解析に失敗しました。手動で入力してください。");
@@ -105,25 +115,47 @@ export default function EventModal({
     }
   }
 
-  function setAllDay() {
+  function handleSetAllDay() {
+    setIsAllDay(true);
+  }
+
+  function handleCancelAllDay() {
+    setIsAllDay(false);
+    // 時刻入力を復元（基準日を維持）
     const date = isNewWithDate ? baseDate : (start ? start.slice(0, 10) : new Date().toISOString().slice(0, 10));
-    setStart(`${date}T00:00`);
-    setEnd(`${date}T23:59`);
+    setStart(`${date}T09:00`);
+    setEnd(`${date}T10:00`);
+  }
+
+  // allDay 保存用の JST 日付文字列を取得
+  function getAllDayDate(): string {
+    if (isNewWithDate) return baseDate;
+    if (event) return toJSTDateStr(event.start);
+    if (start) return start.slice(0, 10); // ユーザーが入力した日付
+    return new Date().toISOString().slice(0, 10);
   }
 
   async function save() {
-    if (!title || !start || !end) {
-      toast.error("タイトル・開始・終了は必須です");
+    if (!title) {
+      toast.error("タイトルは必須です");
       return;
     }
+    if (!isAllDay && (!start || !end)) {
+      toast.error("開始・終了時刻は必須です");
+      return;
+    }
+
+    const date = getAllDayDate();
     const body = {
       title,
-      start: new Date(start).toISOString(),
-      end: new Date(end).toISOString(),
+      allDay: isAllDay,
+      start: isAllDay ? `${date}T00:00:00+09:00` : new Date(start).toISOString(),
+      end: isAllDay ? `${date}T23:59:59+09:00` : new Date(end).toISOString(),
       description,
       location,
       color,
     };
+
     const res = event
       ? await fetch(`/api/events/${event.id}`, {
           method: "PUT",
@@ -201,24 +233,55 @@ export default function EventModal({
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
-          {/* 日付クリックで開いた場合: 日付ラベル + 時刻のみ */}
-          {isNewWithDate ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>日時 *</Label>
+          {/* 日時入力エリア */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>日時 *</Label>
+              {isAllDay ? (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={setAllDay}
-                  className="text-xs h-7 px-2"
+                  onClick={handleCancelAllDay}
+                  className="text-xs h-7 px-2 text-slate-500"
+                >
+                  時刻を指定する
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSetAllDay}
+                  className="text-xs h-7 px-2 text-indigo-600 border-indigo-300 hover:bg-indigo-50"
                 >
                   終日
                 </Button>
-              </div>
+              )}
+            </div>
+
+            {/* 日付クリックで開いた場合: 日付ラベル表示 */}
+            {isNewWithDate && (
               <div className="text-sm font-medium text-slate-700 py-2 px-3 bg-slate-50 rounded-md border border-slate-200">
                 {baseDateDisplay}
               </div>
+            )}
+
+            {isAllDay ? (
+              /* 終日モード */
+              <div className="py-2 px-3 bg-indigo-50 rounded-md border border-indigo-200 text-sm text-indigo-700 font-medium">
+                終日
+                {!isNewWithDate && (
+                  <span className="ml-2 text-xs text-indigo-400 font-normal">
+                    ({event
+                      ? toJSTDateStr(event.start)
+                      : start ? start.slice(0, 10) : ""
+                    })
+                  </span>
+                )}
+              </div>
+            ) : isNewWithDate ? (
+              /* 日付クリック新規 + 時刻のみ */
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs text-slate-500">開始時刻</Label>
@@ -237,22 +300,8 @@ export default function EventModal({
                   />
                 </div>
               </div>
-            </div>
-          ) : (
-            /* 編集 or 日付なし新規: datetime-local */
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <Label>日時 *</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={setAllDay}
-                  className="text-xs h-7 px-2"
-                >
-                  終日
-                </Button>
-              </div>
+            ) : (
+              /* 編集 or 日付なし新規: datetime-local */
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs text-slate-500">開始</Label>
@@ -271,8 +320,8 @@ export default function EventModal({
                   />
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div>
             <Label>場所</Label>

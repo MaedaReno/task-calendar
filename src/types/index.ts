@@ -8,6 +8,7 @@ export interface EventData {
   description?: string | null;
   start: string;
   end: string;
+  allDay?: boolean;
   color: string;
   location?: string | null;
 }

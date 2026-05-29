@@ -7,6 +7,7 @@ const EventSchema = z.object({
   description: z.string().optional(),
   start: z.string(),
   end: z.string(),
+  allDay: z.boolean().optional().default(false),
   color: z.string().optional().default("#3b82f6"),
   location: z.string().optional(),
 });

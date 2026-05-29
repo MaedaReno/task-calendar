@@ -7,6 +7,7 @@ const UpdateSchema = z.object({
   description: z.string().optional(),
   start: z.string().optional(),
   end: z.string().optional(),
+  allDay: z.boolean().optional(),
   color: z.string().optional(),
   location: z.string().optional(),
 });

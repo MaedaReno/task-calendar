@@ -121,6 +121,48 @@ ${input}
 終了時刻が不明な場合は開始時刻の1時間後にしてください。`;
 }
 
+export function autoParsePrompt(input: string): string {
+  return `あなたはタスク・カレンダー管理アシスタントです。
+現在日時: ${nowJST()} (JST)
+
+ユーザーの入力を分析し、それが「タスク（作業・やること）」なのか「予定（日時が決まった出来事）」なのかを判断して返してください。
+コードブロックや説明文は不要です。JSONのみ返してください。
+
+判断基準:
+- 「〜をする」「〜を完成させる」「〜を準備する」「〜を勉強する」など達成すべき作業 → task
+- 「〜がある」「〜に行く」「〜と会う」「会議」「授業」「イベント」「〜時から」など日時が決まった出来事 → event
+
+ユーザー入力:
+${input}
+
+タスクの場合のレスポンス:
+{
+  "type": "task",
+  "tasks": [
+    {
+      "title": "タスクのタイトル",
+      "description": "タスクの詳細説明",
+      "estimatedHours": 推定作業時間（数値、時間単位）,
+      "suggestedDeadline": "YYYY-MM-DDTHH:mm:ss+09:00"
+    }
+  ]
+}
+
+予定の場合のレスポンス:
+{
+  "type": "event",
+  "event": {
+    "title": "予定のタイトル",
+    "start": "YYYY-MM-DDTHH:mm:ss+09:00",
+    "end": "YYYY-MM-DDTHH:mm:ss+09:00",
+    "description": "説明（任意、なければ省略）"
+  }
+}
+
+時刻が不明な場合はその日の09:00〜10:00をデフォルトにしてください。
+終了時刻が不明な場合は開始時刻の1時間後にしてください。`;
+}
+
 export function reportPrompt(
   completedCount: number,
   pendingCount: number,

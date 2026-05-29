@@ -25,15 +25,31 @@ export default function ScheduleCalendar() {
     fetchEvents();
   }, []);
 
-  const calendarEvents = events.map((e) => ({
-    id: e.id,
-    title: e.title,
-    start: e.start,
-    end: e.end,
-    backgroundColor: e.color,
-    borderColor: e.color,
-    extendedProps: e,
-  }));
+  const calendarEvents = events.map((e) => {
+    if (e.allDay) {
+      // UTCをJSTに戻して正しい日付文字列を取得
+      const jst = new Date(new Date(e.start).getTime() + 9 * 60 * 60 * 1000);
+      const dateStr = jst.toISOString().slice(0, 10);
+      return {
+        id: e.id,
+        title: e.title,
+        start: dateStr,
+        allDay: true,
+        backgroundColor: e.color,
+        borderColor: e.color,
+        extendedProps: e,
+      };
+    }
+    return {
+      id: e.id,
+      title: e.title,
+      start: e.start,
+      end: e.end,
+      backgroundColor: e.color,
+      borderColor: e.color,
+      extendedProps: e,
+    };
+  });
 
   return (
     <div className="p-4 bg-white rounded-xl shadow">
