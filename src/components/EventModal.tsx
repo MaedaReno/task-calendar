@@ -41,6 +41,15 @@ export default function EventModal({
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
+  // 日付クリックで新規作成する場合: 日付固定・時刻のみ入力モード
+  const isNewWithDate = !event && !!defaultStart;
+  const baseDate = defaultStart ? defaultStart.slice(0, 10) : "";
+  const baseDateDisplay = baseDate
+    ? new Date(`${baseDate}T12:00:00`).toLocaleDateString("ja-JP", {
+        year: "numeric", month: "long", day: "numeric", weekday: "short",
+      })
+    : "";
+
   useEffect(() => {
     if (event) {
       setTitle(event.title);
@@ -51,11 +60,23 @@ export default function EventModal({
       setColor(event.color);
     } else {
       setTitle("");
-      setStart(defaultStart ? defaultStart.slice(0, 16) : "");
-      setEnd("");
       setDescription("");
       setLocation("");
       setColor("#3b82f6");
+
+      if (defaultStart) {
+        const date = defaultStart.slice(0, 10);
+        const hasTime = defaultStart.length > 10 && defaultStart.includes("T");
+        const startHHMM = hasTime ? defaultStart.slice(11, 16) : "09:00";
+        const [h, m] = startHHMM.split(":").map(Number);
+        const endH = Math.min(h + 1, 23);
+        const endHHMM = `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+        setStart(`${date}T${startHHMM}`);
+        setEnd(`${date}T${endHHMM}`);
+      } else {
+        setStart("");
+        setEnd("");
+      }
     }
     setAiInput("");
   }, [event, defaultStart, open]);
@@ -82,6 +103,12 @@ export default function EventModal({
     } finally {
       setAiLoading(false);
     }
+  }
+
+  function setAllDay() {
+    const date = isNewWithDate ? baseDate : (start ? start.slice(0, 10) : new Date().toISOString().slice(0, 10));
+    setStart(`${date}T00:00`);
+    setEnd(`${date}T23:59`);
   }
 
   async function save() {
@@ -173,24 +200,80 @@ export default function EventModal({
             <Label>タイトル *</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label>開始 *</Label>
-              <Input
-                type="datetime-local"
-                value={start}
-                onChange={(e) => setStart(e.target.value)}
-              />
+
+          {/* 日付クリックで開いた場合: 日付ラベル + 時刻のみ */}
+          {isNewWithDate ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>日時 *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={setAllDay}
+                  className="text-xs h-7 px-2"
+                >
+                  終日
+                </Button>
+              </div>
+              <div className="text-sm font-medium text-slate-700 py-2 px-3 bg-slate-50 rounded-md border border-slate-200">
+                {baseDateDisplay}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-slate-500">開始時刻</Label>
+                  <Input
+                    type="time"
+                    value={start.length >= 16 ? start.slice(11, 16) : "09:00"}
+                    onChange={(e) => setStart(`${baseDate}T${e.target.value}`)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-500">終了時刻</Label>
+                  <Input
+                    type="time"
+                    value={end.length >= 16 ? end.slice(11, 16) : "10:00"}
+                    onChange={(e) => setEnd(`${baseDate}T${e.target.value}`)}
+                  />
+                </div>
+              </div>
             </div>
+          ) : (
+            /* 編集 or 日付なし新規: datetime-local */
             <div>
-              <Label>終了 *</Label>
-              <Input
-                type="datetime-local"
-                value={end}
-                onChange={(e) => setEnd(e.target.value)}
-              />
+              <div className="flex items-center justify-between mb-1">
+                <Label>日時 *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={setAllDay}
+                  className="text-xs h-7 px-2"
+                >
+                  終日
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-slate-500">開始</Label>
+                  <Input
+                    type="datetime-local"
+                    value={start}
+                    onChange={(e) => setStart(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-500">終了</Label>
+                  <Input
+                    type="datetime-local"
+                    value={end}
+                    onChange={(e) => setEnd(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
           <div>
             <Label>場所</Label>
             <Input value={location} onChange={(e) => setLocation(e.target.value)} />

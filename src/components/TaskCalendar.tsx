@@ -39,7 +39,7 @@ export default function TaskCalendar() {
     <div className="p-4 bg-white rounded-xl shadow">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        initialView="dayGridMonth"
         timeZone="Asia/Tokyo"
         locale="ja"
         headerToolbar={{
