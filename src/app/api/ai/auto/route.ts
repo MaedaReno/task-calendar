@@ -6,10 +6,11 @@ import { getModel } from "@/lib/gemini";
 import { autoParsePrompt } from "@/lib/ai-prompts";
 import { handleAIError, withRetry, withTimeout, AIError } from "@/lib/ai-error";
 
+// z.coerce.number() で文字列数値にも対応、nullable/optional で null/undefined も許容
 const TaskItemSchema = z.object({
   title: z.string(),
-  description: z.string(),
-  estimatedHours: z.number(),
+  description: z.string().nullable().optional().transform((v) => v ?? ""),
+  estimatedHours: z.coerce.number().optional().default(1),
   suggestedDeadline: z.string(),
 });
 
@@ -17,7 +18,7 @@ const EventItemSchema = z.object({
   title: z.string(),
   start: z.string(),
   end: z.string(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
 });
 
 const ResponseSchema = z.union([
@@ -42,8 +43,19 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    const parsed = ResponseSchema.safeParse(JSON.parse(result));
-    if (!parsed.success) throw new AIError("ai_parse_error");
+    let rawJson: unknown;
+    try {
+      rawJson = JSON.parse(result);
+    } catch {
+      console.error("[ai/auto] JSON parse error. Raw:", result);
+      throw new AIError("ai_parse_error");
+    }
+
+    const parsed = ResponseSchema.safeParse(rawJson);
+    if (!parsed.success) {
+      console.error("[ai/auto] Schema validation failed:", parsed.error.flatten(), "Raw:", result);
+      throw new AIError("ai_parse_error");
+    }
 
     return Response.json(parsed.data);
   } catch (err) {

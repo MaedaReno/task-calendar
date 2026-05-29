@@ -26,7 +26,8 @@ interface Props {
   onClose: () => void;
   task?: TaskData | null;
   defaultDeadline?: string;
-  onSaved: () => void;
+  // 新規作成時は TaskData を受け取れる（既存コードとの互換性維持のため optional）
+  onSaved: (newTask?: TaskData) => void;
 }
 
 const COLORS = [
@@ -106,8 +107,10 @@ export default function TaskModal({ open, onClose, task, defaultDeadline, onSave
         });
 
     if (res.ok) {
+      const saved = await res.json();
       toast.success(task ? "タスクを更新しました" : "タスクを追加しました");
-      onSaved();
+      // 新規作成時のみ saved を渡す（呼び出し元でAIスケジューリングに利用可能）
+      onSaved(task ? undefined : saved);
     } else {
       toast.error("保存に失敗しました");
     }
