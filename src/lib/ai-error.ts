@@ -27,7 +27,16 @@ export async function withRetry<T>(
         err instanceof Error &&
         (err.message.includes("429") || err.message.includes("RESOURCE_EXHAUSTED"));
 
-      if (!isRateLimit || attempt === maxRetries) break;
+      // 503(過負荷)・500(内部エラー)など一時的なサーバーエラーもリトライ対象にする
+      const isTransient =
+        err instanceof Error &&
+        (err.message.includes("503") ||
+          err.message.includes("UNAVAILABLE") ||
+          err.message.includes("overloaded") ||
+          err.message.includes("500") ||
+          err.message.includes("INTERNAL"));
+
+      if ((!isRateLimit && !isTransient) || attempt === maxRetries) break;
 
       const retryAfter =
         err instanceof Error &&

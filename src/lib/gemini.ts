@@ -10,7 +10,7 @@ export const gemini =
 
 if (process.env.NODE_ENV !== "production") globalForGemini.gemini = gemini;
 
-export function getModel(modelName = "gemini-flash-latest") {
+export function getModel(modelName = "gemini-2.5-flash") {
   return gemini.getGenerativeModel({
     model: modelName,
     generationConfig: { responseMimeType: "application/json" },
