@@ -1,31 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import TaskCalendar from "@/components/TaskCalendar";
-import TaskList from "@/components/TaskList";
-import AIInputPanel from "@/components/AIInputPanel";
-import { Card } from "@/components/ui/card";
+import dynamic from "next/dynamic";
+import TaskPanel from "@/components/TaskPanel";
+
+const DayPlanner = dynamic(() => import("@/components/DayPlanner"), { ssr: false });
 
 export default function TasksPage() {
   const [refresh, setRefresh] = useState(0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-800">タスクカレンダー</h1>
+    <div
+      className="flex gap-4 p-4"
+      style={{ height: "calc(100vh - 3.5rem)" }}
+    >
+      {/* 左: 日別タイムライン */}
+      <div className="flex-1 min-w-0">
+        <DayPlanner refresh={refresh} onSubtaskToggled={() => setRefresh((n) => n + 1)} />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <TaskCalendar key={refresh} />
-
-        <div className="space-y-4">
-          <Card className="p-4">
-            <h3 className="font-semibold text-sm text-gray-700 mb-3">
-              AIタスク入力
-            </h3>
-            <AIInputPanel onApproved={() => setRefresh((n) => n + 1)} />
-          </Card>
-
-          <TaskList key={`list-${refresh}`} />
-        </div>
+      {/* 右: タスク一覧 + 詳細 */}
+      <div className="w-80 xl:w-96 shrink-0 flex flex-col" style={{ height: "100%" }}>
+        <TaskPanel refresh={refresh} onTaskChange={() => setRefresh((n) => n + 1)} />
       </div>
     </div>
   );
