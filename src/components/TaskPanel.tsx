@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Loader2, Plus, RefreshCw, CheckCircle2, Circle,
   Clock, CalendarDays, ChevronRight, Pencil,
@@ -19,10 +17,10 @@ interface Props {
 }
 
 const PRIORITY_LABEL: Record<string, string> = { low: "低", medium: "中", high: "高" };
-const PRIORITY_COLOR: Record<string, string> = {
-  low: "bg-slate-100 text-slate-500",
-  medium: "bg-amber-100 text-amber-600",
-  high: "bg-red-100 text-red-500",
+const PRIORITY_STYLE: Record<string, { background: string; color: string }> = {
+  low: { background: "rgba(100,116,139,0.15)", color: "#64748b" },
+  medium: { background: "rgba(251,191,36,0.15)", color: "#f59e0b" },
+  high: { background: "rgba(239,68,68,0.15)", color: "#ef4444" },
 };
 
 export default function TaskPanel({ refresh, onTaskChange }: Props) {
@@ -32,7 +30,6 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
   const [editTask, setEditTask] = useState<TaskData | null>(null);
   const [planningId, setPlanningId] = useState<string | null>(null);
   const [defaultDeadline, setDefaultDeadline] = useState<string | undefined>();
-  // タスク追加後のAIスケジューリング
   const [scheduling, setScheduling] = useState(false);
 
   async function fetchTasks() {
@@ -124,33 +121,53 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
 
   return (
     <div className="flex flex-col h-full gap-3">
-      {/* ── タスク一覧 ── */}
-      <div className="flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden"
-           style={{ flex: selectedTask ? "0 0 40%" : "1" }}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
-          <h2 className="font-semibold text-slate-700 text-sm">タスク一覧</h2>
-          <Button
-            size="sm"
-            className="h-7 text-xs bg-violet-600 hover:bg-violet-700"
+      {/* Task list */}
+      <div
+        className="flex flex-col min-h-0 rounded-2xl overflow-hidden"
+        style={{
+          flex: selectedTask ? "0 0 40%" : "1",
+          background: "var(--glass-bg)",
+          border: "1px solid var(--glass-border)",
+        }}
+      >
+        <div
+          className="flex items-center justify-between px-4 py-3 shrink-0"
+          style={{ borderBottom: "1px solid var(--glass-border)" }}
+        >
+          <h2 className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>
+            タスク一覧
+          </h2>
+          <button
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all"
+            style={{
+              background: "var(--accent-violet-dim)",
+              color: "var(--accent-violet)",
+              border: "1px solid rgba(167,139,250,0.25)",
+            }}
             onClick={() => {
               setEditTask(null);
               setDefaultDeadline(undefined);
               setModalOpen(true);
             }}
           >
-            <Plus className="w-3.5 h-3.5 mr-1" />追加
-          </Button>
+            <Plus className="w-3 h-3" />追加
+          </button>
         </div>
 
         {scheduling && (
-          <div className="flex items-center gap-2 mx-3 mt-2 px-3 py-2 bg-indigo-50 rounded-lg text-xs text-indigo-700 shrink-0">
+          <div
+            className="flex items-center gap-2 mx-3 mt-2 px-3 py-2 rounded-xl text-xs shrink-0"
+            style={{ background: "var(--accent-violet-dim)", color: "var(--accent-violet)", border: "1px solid rgba(167,139,250,0.2)" }}
+          >
             <Loader2 className="w-3.5 h-3.5 animate-spin" />AIがスケジュール中…
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
+        <div className="flex-1 overflow-y-auto">
           {tasks.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-10">タスクがありません</p>
+            <p className="text-sm text-center py-10" style={{ color: "var(--text-muted)" }}>
+              タスクがありません
+            </p>
           ) : (
             tasks.map((task) => {
               const total = task.subtasks?.length ?? 0;
@@ -161,18 +178,36 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
               return (
                 <button
                   key={task.id}
-                  className={`w-full text-left px-4 py-3 transition-colors hover:bg-slate-50 ${isSelected ? "bg-indigo-50" : ""}`}
+                  className="w-full text-left px-4 py-3 transition-all"
+                  style={{
+                    borderBottom: "1px solid var(--glass-border)",
+                    background: isSelected ? "var(--accent-violet-dim)" : "transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) (e.currentTarget as HTMLElement).style.background = "var(--glass-bg-hover)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) (e.currentTarget as HTMLElement).style.background = "transparent";
+                  }}
                   onClick={() => setSelectedId(isSelected ? null : task.id)}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: task.color }} />
-                    <span className="font-medium text-sm text-slate-800 flex-1 truncate">{task.title}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${PRIORITY_COLOR[task.priority]}`}>
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: task.color }} />
+                    <span className="font-medium text-sm flex-1 truncate" style={{ color: "var(--text-primary)" }}>
+                      {task.title}
+                    </span>
+                    <span
+                      className="text-xs px-1.5 py-0.5 rounded-md font-medium shrink-0"
+                      style={PRIORITY_STYLE[task.priority]}
+                    >
                       {PRIORITY_LABEL[task.priority]}
                     </span>
-                    <ChevronRight className={`w-3.5 h-3.5 text-slate-300 shrink-0 transition-transform ${isSelected ? "rotate-90" : ""}`} />
+                    <ChevronRight
+                      className="w-3.5 h-3.5 shrink-0 transition-transform"
+                      style={{ color: "var(--text-muted)", transform: isSelected ? "rotate(90deg)" : "none" }}
+                    />
                   </div>
-                  <div className="flex items-center gap-2 ml-4.5 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 ml-4 text-xs" style={{ color: "var(--text-muted)" }}>
                     <CalendarDays className="w-3 h-3" />
                     {format(new Date(task.deadline), "M/d", { locale: ja })}
                     {task.estimatedHours && (
@@ -183,7 +218,10 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
                     <span className="ml-auto">{done}/{total} 完了</span>
                   </div>
                   {total > 0 && (
-                    <div className="ml-4 mt-1.5 h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="ml-4 mt-1.5 h-0.5 rounded-full overflow-hidden"
+                      style={{ background: "var(--glass-border)" }}
+                    >
                       <div
                         className="h-full rounded-full transition-all"
                         style={{ width: `${pct}%`, backgroundColor: task.color }}
@@ -197,41 +235,50 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
         </div>
       </div>
 
-      {/* ── タスク詳細 ── */}
+      {/* Task detail */}
       {selectedTask && (
-        <div className="flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex-1">
-          {/* 詳細ヘッダー */}
-          <div className="px-4 py-3 border-b border-slate-100 shrink-0">
+        <div
+          className="flex flex-col min-h-0 rounded-2xl overflow-hidden flex-1"
+          style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+        >
+          <div
+            className="px-4 py-3 shrink-0"
+            style={{ borderBottom: "1px solid var(--glass-border)" }}
+          >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedTask.color }} />
-                <h3 className="font-semibold text-slate-800 text-sm truncate">{selectedTask.title}</h3>
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: selectedTask.color }} />
+                <h3 className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>
+                  {selectedTask.title}
+                </h3>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
+                <button
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
+                  style={{ color: "var(--text-muted)" }}
                   title="AI再スケジュール"
                   disabled={planningId === selectedTask.id}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--glass-bg-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   onClick={() => replan(selectedTask.id)}
                 >
                   {planningId === selectedTask.id
                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     : <RefreshCw className="w-3.5 h-3.5" />}
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
+                </button>
+                <button
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ color: "var(--text-muted)" }}
                   title="タスクを編集"
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--glass-bg-hover)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   onClick={() => { setEditTask(selectedTask); setModalOpen(true); }}
                 >
                   <Pencil className="w-3.5 h-3.5" />
-                </Button>
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400 ml-5">
+            <div className="flex items-center gap-3 mt-1.5 text-xs ml-5" style={{ color: "var(--text-muted)" }}>
               <span className="flex items-center gap-1">
                 <CalendarDays className="w-3 h-3" />
                 期日: {format(new Date(selectedTask.deadline), "yyyy年M月d日", { locale: ja })}
@@ -244,35 +291,48 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
               )}
             </div>
             {selectedTask.description && (
-              <p className="mt-1.5 ml-5 text-xs text-slate-500 leading-relaxed">{selectedTask.description}</p>
+              <p className="mt-1.5 ml-5 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                {selectedTask.description}
+              </p>
             )}
           </div>
 
-          {/* サブタスク一覧 */}
           <div className="flex-1 overflow-y-auto">
             {(selectedTask.subtasks?.length ?? 0) === 0 ? (
-              <div className="text-center py-8 text-sm text-slate-400">
+              <div className="text-center py-8 text-sm" style={{ color: "var(--text-muted)" }}>
                 <p>サブタスクがありません</p>
-                <p className="text-xs mt-1">AI再スケジュールでサブタスクを生成できます</p>
+                <p className="text-xs mt-1" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+                  AI再スケジュールでサブタスクを生成できます
+                </p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div>
                 {(selectedTask.subtasks ?? [])
                   .sort((a, b) => a.order - b.order)
                   .map((s) => (
                     <button
                       key={s.id}
-                      className="w-full text-left px-4 py-2.5 flex items-start gap-3 hover:bg-slate-50 transition-colors"
+                      className="w-full text-left px-4 py-2.5 flex items-start gap-3 transition-colors"
+                      style={{ borderBottom: "1px solid var(--glass-border)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--glass-bg-hover)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                       onClick={() => toggleSubtask(s.id, s.status)}
                     >
                       {s.status === "done"
-                        ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        : <Circle className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" />}
+                        ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent-emerald)" }} />
+                        : <Circle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />
+                      }
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm leading-snug ${s.status === "done" ? "line-through text-slate-400" : "text-slate-700"}`}>
+                        <p
+                          className="text-sm leading-snug"
+                          style={{
+                            color: s.status === "done" ? "var(--text-muted)" : "var(--text-primary)",
+                            textDecoration: s.status === "done" ? "line-through" : "none",
+                          }}
+                        >
                           {s.title}
                         </p>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+                        <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
                           {s.estimatedHours && (
                             <span className="flex items-center gap-0.5">
                               <Clock className="w-3 h-3" />{s.estimatedHours}h

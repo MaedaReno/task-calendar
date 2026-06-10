@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock, LayoutTemplate, Trash2, Plus } from "lucide-react";
 import type { UserSettingsData, TaskTemplateData, SubtaskTemplate } from "@/types";
 
 export default function SettingsPage() {
@@ -80,103 +79,186 @@ export default function SettingsPage() {
     toast.success("削除しました");
   }
 
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-800">設定</h1>
+  const inputStyle = {
+    background: "var(--glass-bg)",
+    border: "1px solid var(--glass-border)",
+    color: "var(--text-primary)",
+  };
 
-      <Card className="p-5 space-y-4">
-        <h2 className="font-semibold text-gray-700">作業時間設定</h2>
+  return (
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      {/* Page title */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--accent-cyan)" }}>
+          Settings
+        </p>
+        <h1 className="text-2xl font-light" style={{ color: "var(--text-primary)" }}>設定</h1>
+      </div>
+
+      {/* Work hours */}
+      <div
+        className="rounded-2xl p-5 space-y-5"
+        style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "var(--accent-cyan-dim)", border: "1px solid rgba(56,189,248,0.2)" }}
+          >
+            <Clock className="w-4 h-4" style={{ color: "var(--accent-cyan)" }} />
+          </div>
+          <h2 className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>作業時間設定</h2>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>作業開始時刻</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              作業開始時刻
+            </Label>
             <Input
               type="number"
               min={0}
               max={23}
               value={workStart}
               onChange={(e) => setWorkStart(e.target.value)}
+              style={inputStyle}
             />
           </div>
-          <div>
-            <Label>作業終了時刻</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              作業終了時刻
+            </Label>
             <Input
               type="number"
               min={0}
               max={23}
               value={workEnd}
               onChange={(e) => setWorkEnd(e.target.value)}
+              style={inputStyle}
             />
           </div>
         </div>
-        <Button onClick={saveSettings} disabled={saving}>
-          {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+
+        <button
+          onClick={saveSettings}
+          disabled={saving}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+          style={{
+            background: "linear-gradient(135deg, var(--accent-cyan), var(--accent-violet))",
+            color: "white",
+          }}
+        >
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           保存
-        </Button>
-      </Card>
+        </button>
+      </div>
 
-      <Card className="p-5 space-y-4">
-        <h2 className="font-semibold text-gray-700">タスクテンプレート</h2>
+      {/* Templates */}
+      <div
+        className="rounded-2xl p-5 space-y-5"
+        style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "var(--accent-violet-dim)", border: "1px solid rgba(167,139,250,0.2)" }}
+          >
+            <LayoutTemplate className="w-4 h-4" style={{ color: "var(--accent-violet)" }} />
+          </div>
+          <h2 className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>タスクテンプレート</h2>
+        </div>
 
-        <div className="space-y-2">
-          <div>
-            <Label>テンプレート名</Label>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>テンプレート名</Label>
             <Input
               value={tmplTitle}
               onChange={(e) => setTmplTitle(e.target.value)}
               placeholder="例: レポート作成"
+              style={inputStyle}
             />
           </div>
-          <div>
-            <Label>見積時間 (h)</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>見積時間 (h)</Label>
             <Input
               type="number"
               value={tmplHours}
               onChange={(e) => setTmplHours(e.target.value)}
+              style={inputStyle}
             />
           </div>
-          <div>
-            <Label>デフォルトサブタスク（1行1つ）</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              デフォルトサブタスク（1行1つ）
+            </Label>
             <textarea
-              className="w-full border rounded-md p-2 text-sm min-h-[80px]"
+              className="w-full rounded-xl p-3 text-sm min-h-[80px] resize-none"
+              style={{
+                ...inputStyle,
+                outline: "none",
+              }}
               value={tmplSubtasks}
               onChange={(e) => setTmplSubtasks(e.target.value)}
               placeholder={"資料収集\n構成作成\n執筆"}
             />
           </div>
-          <Button onClick={addTemplate} disabled={!tmplTitle}>
+          <button
+            onClick={addTemplate}
+            disabled={!tmplTitle}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
+            style={{
+              background: "var(--accent-violet-dim)",
+              color: "var(--accent-violet)",
+              border: "1px solid rgba(167,139,250,0.25)",
+            }}
+          >
+            <Plus className="w-4 h-4" />
             テンプレートを追加
-          </Button>
+          </button>
         </div>
 
         {templates.length > 0 && (
-          <div className="space-y-2 pt-2 border-t">
+          <div
+            className="space-y-2 pt-4"
+            style={{ borderTop: "1px solid var(--glass-border)" }}
+          >
             {templates.map((t) => (
               <div
                 key={t.id}
-                className="flex items-center justify-between text-sm py-1"
+                className="flex items-center justify-between text-sm py-2 px-3 rounded-xl"
+                style={{ background: "var(--glass-bg-hover)" }}
               >
                 <div>
-                  <span className="font-medium">{t.title}</span>
+                  <span className="font-medium" style={{ color: "var(--text-primary)" }}>{t.title}</span>
                   {t.estimatedHours && (
-                    <span className="text-gray-400 ml-2">{t.estimatedHours}h</span>
+                    <span className="ml-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                      {t.estimatedHours}h
+                    </span>
                   )}
-                  <span className="text-gray-400 ml-2">
+                  <span className="ml-2 text-xs" style={{ color: "var(--text-muted)" }}>
                     ({t.defaultSubtasks.length}サブタスク)
                   </span>
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-red-500 hover:text-red-700"
+                <button
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ color: "#ef4444" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   onClick={() => deleteTemplate(t.id)}
                 >
-                  削除
-                </Button>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             ))}
           </div>
         )}
-      </Card>
+      </div>
+
+      {settings && (
+        <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>
+          タイムゾーン: {settings.timezone}
+        </p>
+      )}
     </div>
   );
 }

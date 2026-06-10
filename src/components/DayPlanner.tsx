@@ -5,7 +5,6 @@ import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import type { EventData, TaskData } from "@/types";
@@ -50,7 +49,6 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
     calendarRef.current?.getApi().gotoDate(d);
   }
 
-  // UTC日時文字列がcurrentDate（JST）と同じ日かを判定
   function isOnCurrentDay(utcStr: string): boolean {
     const jstMs = new Date(utcStr).getTime() + 9 * 60 * 60 * 1000;
     const dayMs = new Date(currentDate).getTime() + 9 * 60 * 60 * 1000;
@@ -68,7 +66,7 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
           start: jst.toISOString().slice(0, 10),
           allDay: true,
           backgroundColor: e.color,
-          borderColor: e.color,
+          borderColor: "transparent",
           extendedProps: { kind: "event" },
         };
       }
@@ -78,7 +76,7 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
         start: e.start,
         end: e.end,
         backgroundColor: e.color,
-        borderColor: e.color,
+        borderColor: "transparent",
         extendedProps: { kind: "event" },
       };
     }),
@@ -90,9 +88,9 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
           title: s.title,
           start: s.scheduledStart!,
           end: s.scheduledEnd ?? undefined,
-          backgroundColor: s.status === "done" ? "#d1d5db" : `${task.color}dd`,
-          borderColor: task.color,
-          textColor: "#1e293b",
+          backgroundColor: s.status === "done" ? "rgba(100,116,139,0.4)" : `${task.color}cc`,
+          borderColor: "transparent",
+          textColor: "#ffffff",
           extendedProps: { kind: "subtask", subtaskId: s.id, status: s.status, taskTitle: task.title },
         }))
     ),
@@ -115,36 +113,77 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
   const isToday = new Date().toDateString() === currentDate.toDateString();
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-      {/* ヘッダー */}
-      <div className="flex items-center gap-1 px-4 py-3 border-b border-slate-100 shrink-0">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+    <div
+      className="flex flex-col h-full rounded-2xl overflow-hidden"
+      style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+    >
+      {/* Header */}
+      <div
+        className="flex items-center gap-1 px-4 py-3 shrink-0"
+        style={{ borderBottom: "1px solid var(--glass-border)" }}
+      >
+        <button
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+          style={{ color: "var(--text-muted)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--glass-bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
+        </button>
+        <button
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+          style={{ color: "var(--text-muted)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--glass-bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          onClick={() => navigate(1)}
+        >
           <ChevronRight className="w-4 h-4" />
-        </Button>
-        <span className={`font-semibold text-sm ml-1 ${isToday ? "text-indigo-600" : "text-slate-800"}`}>
+        </button>
+
+        <span
+          className="font-medium text-sm ml-1"
+          style={{ color: isToday ? "var(--accent-cyan)" : "var(--text-primary)" }}
+        >
           {format(currentDate, "M月d日 (E)", { locale: ja })}
-          {isToday && <span className="ml-2 text-xs font-normal text-indigo-400">今日</span>}
+          {isToday && (
+            <span className="ml-2 text-xs font-normal" style={{ color: "var(--accent-cyan)", opacity: 0.7 }}>
+              今日
+            </span>
+          )}
         </span>
+
         {!isToday && (
-          <Button variant="outline" size="sm" className="ml-auto h-7 text-xs px-2" onClick={() => navigate(0)}>
+          <button
+            className="ml-auto text-xs px-2.5 py-1 rounded-lg transition-all"
+            style={{
+              background: "var(--glass-bg-hover)",
+              color: "var(--text-secondary)",
+              border: "1px solid var(--glass-border)",
+            }}
+            onClick={() => navigate(0)}
+          >
             今日へ
-          </Button>
+          </button>
         )}
-        {/* 凡例 */}
-        <div className="flex items-center gap-3 ml-auto text-xs text-slate-400">
+
+        {/* Legend */}
+        <div
+          className="flex items-center gap-3 ml-auto text-xs"
+          style={{ color: "var(--text-muted)" }}
+        >
           <span className="flex items-center gap-1">
-            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-indigo-500" />予定
+            <span className="inline-block w-2 h-2 rounded-sm" style={{ background: "var(--accent-cyan)" }} />
+            予定
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-violet-400" />タスク
+            <span className="inline-block w-2 h-2 rounded-sm" style={{ background: "var(--accent-violet)" }} />
+            タスク
           </span>
         </div>
       </div>
 
-      {/* カレンダー本体 */}
+      {/* Calendar body */}
       <div className="flex-1 overflow-auto">
         <FullCalendar
           ref={calendarRef}
@@ -165,7 +204,11 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
           nowIndicator
         />
       </div>
-      <p className="text-center text-xs text-slate-300 py-1.5 shrink-0">
+
+      <p
+        className="text-center text-xs py-1.5 shrink-0"
+        style={{ color: "var(--text-muted)", borderTop: "1px solid var(--glass-border)" }}
+      >
         タスクブロックをクリックで完了/未完了を切り替え
       </p>
     </div>
