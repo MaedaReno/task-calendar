@@ -49,72 +49,65 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  /* === Shadcn/UI semantic tokens — dark by default === */
+  --background: oklch(0.09 0.025 255);
+  --foreground: oklch(0.93 0.008 240);
+  --card: oklch(0.13 0.028 255);
+  --card-foreground: oklch(0.93 0.008 240);
+  --popover: oklch(0.11 0.025 255);
+  --popover-foreground: oklch(0.93 0.008 240);
+  --primary: oklch(0.74 0.15 208);
+  --primary-foreground: oklch(0.09 0.025 255);
+  --secondary: oklch(0.19 0.025 255);
+  --secondary-foreground: oklch(0.93 0.008 240);
+  --muted: oklch(0.16 0.022 255);
+  --muted-foreground: oklch(0.52 0.022 240);
+  --accent: oklch(0.68 0.18 282);
+  --accent-foreground: oklch(0.93 0.008 240);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.10);
+  --ring: oklch(0.74 0.15 208 / 0.45);
+  --chart-1: oklch(0.74 0.15 208);
+  --chart-2: oklch(0.68 0.18 282);
+  --chart-3: oklch(0.78 0.16 160);
+  --chart-4: oklch(0.76 0.15 52);
+  --chart-5: oklch(0.65 0.22 25);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.11 0.025 255);
+  --sidebar-foreground: oklch(0.93 0.008 240);
+  --sidebar-primary: oklch(0.74 0.15 208);
+  --sidebar-primary-foreground: oklch(0.09 0.025 255);
+  --sidebar-accent: oklch(0.18 0.02 255);
+  --sidebar-accent-foreground: oklch(0.93 0.008 240);
+  --sidebar-border: oklch(1 0 0 / 0.08);
+  --sidebar-ring: oklch(0.74 0.15 208 / 0.45);
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* === Custom Design Tokens === */
+  --bg-base: #080c18;
+  --bg-surface: #0c1222;
+
+  /* Glass surfaces */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-hover: rgba(255, 255, 255, 0.07);
+  --glass-bg-active: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.14);
+
+  /* Accent colors */
+  --accent-cyan: #38bdf8;
+  --accent-cyan-dim: rgba(56, 189, 248, 0.15);
+  --accent-cyan-glow: rgba(56, 189, 248, 0.25);
+  --accent-violet: #a78bfa;
+  --accent-violet-dim: rgba(167, 139, 250, 0.15);
+  --accent-violet-glow: rgba(167, 139, 250, 0.25);
+  --accent-emerald: #34d399;
+  --accent-emerald-dim: rgba(52, 211, 153, 0.15);
+
+  /* Text scale */
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #4a5568;
 }
 
 @layer base {
@@ -122,9 +115,174 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground antialiased;
+    background-color: var(--bg-base);
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
   html {
     @apply font-sans;
   }
+}
+
+/* ===================================================
+   FullCalendar Dark Theme
+   =================================================== */
+
+.fc {
+  --fc-border-color: var(--glass-border);
+  --fc-button-bg-color: var(--glass-bg);
+  --fc-button-border-color: var(--glass-border);
+  --fc-button-hover-bg-color: var(--glass-bg-hover);
+  --fc-button-hover-border-color: var(--glass-border-hover);
+  --fc-button-active-bg-color: rgba(56, 189, 248, 0.18);
+  --fc-button-active-border-color: rgba(56, 189, 248, 0.4);
+  --fc-button-text-color: var(--text-secondary);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(255, 255, 255, 0.02);
+  --fc-neutral-text-color: var(--text-secondary);
+  --fc-today-bg-color: rgba(56, 189, 248, 0.06);
+  --fc-non-business-color: rgba(0, 0, 0, 0.2);
+  --fc-highlight-color: rgba(56, 189, 248, 0.1);
+  --fc-event-border-color: transparent;
+  --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.04);
+}
+
+.fc .fc-toolbar-title {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.fc .fc-col-header-cell {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--glass-border) !important;
+}
+
+.fc .fc-col-header-cell-cushion {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 4px;
+  text-decoration: none;
+}
+
+.fc .fc-daygrid-day {
+  background: transparent;
+}
+
+.fc .fc-daygrid-day:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.fc .fc-daygrid-day-number {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+
+.fc .fc-day-today .fc-daygrid-day-number {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.fc .fc-day-today {
+  background-color: var(--fc-today-bg-color) !important;
+}
+
+.fc .fc-timegrid-slot {
+  border-color: var(--glass-border) !important;
+  height: 2.5rem;
+}
+
+.fc .fc-timegrid-slot-label {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+}
+
+.fc .fc-timegrid-now-indicator-line {
+  border-color: var(--accent-cyan);
+  border-width: 1.5px;
+  opacity: 0.8;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+  border-color: var(--accent-cyan);
+}
+
+.fc .fc-button {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.28rem 0.6rem;
+  border-radius: 0.5rem;
+  transition: all 0.15s;
+  backdrop-filter: blur(8px);
+}
+
+.fc .fc-button:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+.fc .fc-button-active {
+  color: var(--accent-cyan) !important;
+}
+
+.fc .fc-event {
+  border-radius: 0.35rem;
+  border: none !important;
+  font-size: 0.72rem;
+  padding: 1px 5px;
+  backdrop-filter: blur(4px);
+}
+
+.fc .fc-daygrid-event {
+  border-radius: 0.3rem;
+}
+
+.fc td,
+.fc th {
+  border-color: var(--glass-border) !important;
+}
+
+.fc-scrollgrid {
+  border-color: var(--glass-border) !important;
+}
+
+.fc-scrollgrid td:last-child {
+  border-right-color: var(--glass-border) !important;
+}
+
+.fc .fc-scrollgrid-sync-table {
+  background: transparent;
+}
+
+.fc .fc-timegrid-body {
+  background: transparent;
+}
+
+.fc .fc-daygrid-body {
+  background: transparent;
+}
+
+/* ===================================================
+   Scrollbar styling
+   =================================================== */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
