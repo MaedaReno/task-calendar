@@ -189,6 +189,49 @@ ${pendingTitles.map((t) => `- ${t}`).join("\n") || "なし"}
 }`;
 }
 
+export function breakdownChatPrompt(
+  taskTitle: string,
+  taskDescription: string,
+  deadline: string,
+  estimatedHours: number | null | undefined,
+  history: { role: "ai" | "user"; content: string }[]
+): string {
+  const historyText =
+    history.length === 0
+      ? "（まだ会話はありません）"
+      : history
+          .map((h) => `${h.role === "ai" ? "AI" : "ユーザー"}: ${h.content}`)
+          .join("\n");
+
+  const userTurns = history.filter((h) => h.role === "user").length;
+  const shouldPropose = userTurns >= 2;
+
+  return `あなたはタスク細分化アシスタントです。
+現在日時: ${nowJST()} (JST)
+
+タスク情報:
+- タイトル: ${taskTitle}
+- 説明: ${taskDescription || "なし"}
+- 期日: ${deadline}
+- 推定作業時間: ${estimatedHours ? `${estimatedHours}時間` : "未定"}
+
+会話履歴:
+${historyText}
+
+${
+  shouldPropose
+    ? "十分な情報が得られました。タスクを実行可能なサブタスクに分解して提案してください。サブタスクは3〜6個程度が適切です。"
+    : "ユーザーに質問を1つだけしてください。タスクの詳細・成果物・進め方・必要なリソースなどを把握するための質問です。すでに聞いた内容は繰り返さないでください。"
+}
+
+必ずJSONのみで返してください（説明文・コードブロック不要）:
+${
+  shouldPropose
+    ? `{"type":"proposal","message":"提案の簡単な説明（1〜2文）","subtasks":[{"title":"サブタスクのタイトル","estimatedHours":数値}]}`
+    : `{"type":"question","message":"ユーザーへの質問文"}`
+}`;
+}
+
 export function dashboardCommentPrompt(
   todayEvents: EventData[],
   todaySubtasks: SubTaskData[],

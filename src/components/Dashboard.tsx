@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Sparkles, CalendarDays, ListTodo } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import type { EventData, SubTaskData, TaskData } from "@/types";
+import type { EventData, TaskData } from "@/types";
 import dynamic from "next/dynamic";
 import AIInputPanel from "./AIInputPanel";
 
@@ -15,7 +15,7 @@ type CalendarView = "schedule" | "task";
 
 export default function Dashboard() {
   const [events, setEvents] = useState<EventData[]>([]);
-  const [subtasks, setSubtasks] = useState<(SubTaskData & { taskColor: string; taskTitle: string })[]>([]);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
   const [comment, setComment] = useState<string | null>(null);
   const [commentLoading, setCommentLoading] = useState(true);
   const [calendarView, setCalendarView] = useState<CalendarView>("schedule");
@@ -45,31 +45,25 @@ export default function Dashboard() {
 
     fetch("/api/tasks")
       .then((r) => r.json())
-      .then((tasks: TaskData[]) => {
-        const todaySubtasks = tasks.flatMap((t) =>
-          (t.subtasks ?? [])
-            .filter((s) => {
-              if (!s.scheduledStart) return false;
-              const d = new Date(s.scheduledStart);
-              return d >= from && d <= to && s.status !== "done";
-            })
-            .map((s) => ({ ...s, taskColor: t.color, taskTitle: t.title }))
-        );
-        setSubtasks(todaySubtasks);
+      .then((data: TaskData[]) => {
+        const upcoming = data
+          .filter((t) => t.status !== "done")
+          .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+        setTasks(upcoming);
       })
       .catch(() => {});
   }, [refresh]);
 
-  async function toggleSubtask(id: string, current: string) {
-    const next = current === "done" ? "pending" : "done";
-    await fetch(`/api/subtasks/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: next }),
-    });
-    setSubtasks((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status: next as "pending" | "in_progress" | "done" } : s))
-    );
+  function deadlineBadge(deadline: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(deadline);
+    d.setHours(0, 0, 0, 0);
+    const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+    if (diff < 0) return { label: `${Math.abs(diff)}日超過`, style: { background: "rgba(239,68,68,0.15)", color: "#ef4444" } };
+    if (diff === 0) return { label: "今日", style: { background: "rgba(251,191,36,0.15)", color: "#f59e0b" } };
+    if (diff <= 3) return { label: `あと${diff}日`, style: { background: "rgba(251,191,36,0.1)", color: "#f59e0b" } };
+    return { label: `あと${diff}日`, style: { background: "var(--glass-bg-hover)", color: "var(--text-muted)" } };
   }
 
   return (
@@ -227,7 +221,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Today's Tasks */}
+            {/* Task list */}
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <div
@@ -237,67 +231,78 @@ export default function Dashboard() {
                   <ListTodo className="w-4 h-4" style={{ color: "var(--accent-violet)" }} />
                 </div>
                 <h2 className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>
-                  今日のタスク
+                  タスク（期限順）
                 </h2>
                 <span
                   className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
                   style={{ background: "var(--glass-bg)", color: "var(--text-muted)", border: "1px solid var(--glass-border)" }}
                 >
-                  {subtasks.length}件
+                  {tasks.length}件
                 </span>
               </div>
 
-              {subtasks.length === 0 ? (
+              {tasks.length === 0 ? (
                 <div
                   className="text-center py-8 rounded-2xl"
                   style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
                 >
                   <ListTodo className="w-7 h-7 mx-auto mb-2 opacity-20" style={{ color: "var(--text-secondary)" }} />
                   <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                    今日スケジュールされたタスクはありません
+                    タスクがありません
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {subtasks.map((s) => (
-                    <div
-                      key={s.id}
-                      className="rounded-xl p-3 flex items-center gap-3 cursor-pointer transition-all duration-150"
-                      style={{
-                        background: "var(--glass-bg)",
-                        border: "1px solid var(--glass-border)",
-                        opacity: s.status === "done" ? 0.45 : 1,
-                      }}
-                      onClick={() => toggleSubtask(s.id, s.status)}
-                      onMouseEnter={(el) => { (el.currentTarget as HTMLElement).style.background = "var(--glass-bg-hover)"; }}
-                      onMouseLeave={(el) => { (el.currentTarget as HTMLElement).style.background = "var(--glass-bg)"; }}
-                    >
+                  {tasks.map((t) => {
+                    const badge = deadlineBadge(t.deadline);
+                    const total = t.subtasks?.length ?? 0;
+                    const done = t.subtasks?.filter((s) => s.status === "done").length ?? 0;
+                    return (
                       <div
-                        className="w-0.5 h-10 rounded-full shrink-0"
-                        style={{ backgroundColor: s.taskColor }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className="font-medium text-sm truncate"
-                          style={{
-                            color: s.status === "done" ? "var(--text-muted)" : "var(--text-primary)",
-                            textDecoration: s.status === "done" ? "line-through" : "none",
-                          }}
-                        >
-                          {s.title}
-                        </p>
-                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>{s.taskTitle}</p>
+                        key={t.id}
+                        className="rounded-xl p-3 transition-all duration-150"
+                        style={{
+                          background: "var(--glass-bg)",
+                          border: "1px solid var(--glass-border)",
+                        }}
+                        onMouseEnter={(el) => { (el.currentTarget as HTMLElement).style.background = "var(--glass-bg-hover)"; }}
+                        onMouseLeave={(el) => { (el.currentTarget as HTMLElement).style.background = "var(--glass-bg)"; }}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: t.color }}
+                          />
+                          <p
+                            className="font-medium text-sm flex-1 truncate"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {t.title}
+                          </p>
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full shrink-0 font-medium"
+                            style={badge.style}
+                          >
+                            {badge.label}
+                          </span>
+                        </div>
+                        {total > 0 && (
+                          <div className="mt-2 ml-4.5">
+                            <div className="flex justify-between text-xs mb-1" style={{ color: "var(--text-muted)" }}>
+                              <span>{done}/{total} 完了</span>
+                              <span>{Math.round((done / total) * 100)}%</span>
+                            </div>
+                            <div className="h-1 rounded-full overflow-hidden" style={{ background: "var(--glass-border)" }}>
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{ width: `${(done / total) * 100}%`, backgroundColor: t.color }}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      {s.estimatedHours && (
-                        <span
-                          className="text-xs shrink-0 px-1.5 py-0.5 rounded-md"
-                          style={{ background: "var(--glass-bg-active)", color: "var(--text-secondary)", border: "1px solid var(--glass-border)" }}
-                        >
-                          {s.estimatedHours}h
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
