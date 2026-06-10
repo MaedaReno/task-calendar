@@ -25,7 +25,6 @@ export default function TaskCalendar() {
     fetchTasks();
   }, []);
 
-  // 新規タスク作成後にAI breakdown + plan を自動実行
   async function scheduleNewTask(newTask: TaskData) {
     setScheduling(true);
     try {
@@ -83,18 +82,31 @@ export default function TaskCalendar() {
         title: `[${task.title}] ${s.title}`,
         start: s.scheduledStart!,
         end: s.scheduledEnd!,
-        backgroundColor: s.status === "done" ? "#9ca3af" : task.color,
-        borderColor: s.status === "done" ? "#9ca3af" : task.color,
-        opacity: s.status === "done" ? 0.5 : 1,
+        backgroundColor: s.status === "done" ? "rgba(100,116,139,0.5)" : task.color,
+        borderColor: "transparent",
         extendedProps: { subtask: s, task },
       }))
   );
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow">
+    <div
+      className="rounded-2xl overflow-hidden p-3"
+      style={{
+        background: "var(--glass-bg)",
+        border: "1px solid var(--glass-border)",
+        backdropFilter: "blur(12px)",
+      }}
+    >
       {scheduling && (
-        <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-indigo-50 rounded-lg text-sm text-indigo-700">
-          <Loader2 className="w-4 h-4 animate-spin" />
+        <div
+          className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl text-xs"
+          style={{
+            background: "var(--accent-violet-dim)",
+            color: "var(--accent-violet)",
+            border: "1px solid rgba(167,139,250,0.2)",
+          }}
+        >
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
           AIがタスクをスケジュール中…
         </div>
       )}
@@ -165,7 +177,7 @@ export default function TaskCalendar() {
         slotMinTime="06:00:00"
         slotMaxTime="24:00:00"
       />
-      <p className="text-xs text-gray-400 mt-2 text-center">
+      <p className="text-xs text-center mt-2" style={{ color: "var(--text-muted)" }}>
         日付クリックでタスク追加・イベントクリックで完了切り替え・ドラッグで再スケジュール
       </p>
       <TaskModal

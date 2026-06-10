@@ -27,7 +27,6 @@ export default function ScheduleCalendar() {
 
   const calendarEvents = events.map((e) => {
     if (e.allDay) {
-      // UTCをJSTに戻して正しい日付文字列を取得
       const jst = new Date(new Date(e.start).getTime() + 9 * 60 * 60 * 1000);
       const dateStr = jst.toISOString().slice(0, 10);
       return {
@@ -52,7 +51,14 @@ export default function ScheduleCalendar() {
   });
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow">
+    <div
+      className="rounded-2xl overflow-hidden p-3"
+      style={{
+        background: "var(--glass-bg)",
+        border: "1px solid var(--glass-border)",
+        backdropFilter: "blur(12px)",
+      }}
+    >
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}

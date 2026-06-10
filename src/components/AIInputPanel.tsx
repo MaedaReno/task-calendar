@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Check, CalendarDays, ListTodo } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -144,89 +141,123 @@ export default function AIInputPanel({ onApproved }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* テキスト入力 */}
+      {/* Input area */}
       <div className="flex gap-2">
         <Textarea
-          placeholder="例: 来月のゼミ発表を準備する、明日14時から会議がある、など…"
+          placeholder="例: 来月のゼミ発表を準備する、明日14時から会議がある…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           rows={3}
-          className="flex-1 text-sm"
+          className="flex-1 text-sm resize-none"
+          style={{
+            background: "var(--glass-bg)",
+            border: "1px solid var(--glass-border)",
+            color: "var(--text-primary)",
+          }}
         />
         <div className="flex flex-col gap-2">
           <VoiceInputButton onResult={(t) => setInput((prev) => prev + t)} />
-          <Button
+          <button
             onClick={extract}
             disabled={loading || !input.trim()}
-            size="icon"
             title="AIで解析"
-            className="bg-indigo-600 hover:bg-indigo-700"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: "linear-gradient(135deg, var(--accent-cyan), var(--accent-violet))",
+            }}
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-          </Button>
+            {loading
+              ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+              : <Sparkles className="w-4 h-4 text-white" />
+            }
+          </button>
         </div>
       </div>
 
-      {/* タスク解析結果 */}
+      {/* Task result */}
       {result?.type === "task" && (
         <div className="space-y-2">
           <div className="flex items-center gap-1.5">
-            <ListTodo className="w-3.5 h-3.5 text-violet-600" />
-            <p className="text-xs font-medium text-slate-600">
+            <ListTodo className="w-3.5 h-3.5" style={{ color: "var(--accent-violet)" }} />
+            <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
               タスクとして認識 ({result.tasks.length}件)
             </p>
           </div>
           {result.tasks.map((task, i) => (
-            <Card key={i} className="p-3 space-y-1 border-violet-100">
+            <div
+              key={i}
+              className="p-3 space-y-1 rounded-xl"
+              style={{ background: "var(--accent-violet-dim)", border: "1px solid rgba(167,139,250,0.2)" }}
+            >
               <div className="flex items-start justify-between">
-                <p className="font-medium text-sm">{task.title}</p>
-                <Badge variant="outline" className="text-xs shrink-0 ml-2">{task.estimatedHours}h</Badge>
+                <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>{task.title}</p>
+                <span
+                  className="text-xs px-1.5 py-0.5 rounded-md ml-2 shrink-0"
+                  style={{ background: "var(--glass-bg-active)", color: "var(--text-secondary)", border: "1px solid var(--glass-border)" }}
+                >
+                  {task.estimatedHours}h
+                </span>
               </div>
-              <p className="text-xs text-slate-500">{task.description}</p>
-              <p className="text-xs text-slate-400">期日: {new Date(task.suggestedDeadline).toLocaleDateString("ja-JP")}</p>
-            </Card>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>{task.description}</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                期日: {new Date(task.suggestedDeadline).toLocaleDateString("ja-JP")}
+              </p>
+            </div>
           ))}
-          <Button
+          <button
             onClick={() => approveTask(result.tasks)}
             disabled={approving}
-            className="w-full bg-violet-600 hover:bg-violet-700"
+            className="w-full py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-50"
+            style={{
+              background: "var(--accent-violet-dim)",
+              color: "var(--accent-violet)",
+              border: "1px solid rgba(167,139,250,0.3)",
+            }}
           >
             {approving
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />スケジューリング中…</>
-              : <><Check className="w-4 h-4 mr-2" />承認してタスクに追加</>
+              ? <><Loader2 className="w-4 h-4 animate-spin" />スケジューリング中…</>
+              : <><Check className="w-4 h-4" />承認してタスクに追加</>
             }
-          </Button>
+          </button>
         </div>
       )}
 
-      {/* 予定解析結果 */}
+      {/* Event result */}
       {result?.type === "event" && (
         <div className="space-y-2">
           <div className="flex items-center gap-1.5">
-            <CalendarDays className="w-3.5 h-3.5 text-indigo-600" />
-            <p className="text-xs font-medium text-slate-600">予定として認識</p>
+            <CalendarDays className="w-3.5 h-3.5" style={{ color: "var(--accent-cyan)" }} />
+            <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>予定として認識</p>
           </div>
-          <Card className="p-3 space-y-1 border-indigo-100">
-            <p className="font-medium text-sm">{result.event.title}</p>
-            <p className="text-xs text-slate-500">
+          <div
+            className="p-3 space-y-1 rounded-xl"
+            style={{ background: "var(--accent-cyan-dim)", border: "1px solid rgba(56,189,248,0.2)" }}
+          >
+            <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>{result.event.title}</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               {format(new Date(result.event.start), "M月d日 (E) HH:mm", { locale: ja })}
               {" – "}
               {format(new Date(result.event.end), "HH:mm")}
             </p>
             {result.event.description && (
-              <p className="text-xs text-slate-400">{result.event.description}</p>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>{result.event.description}</p>
             )}
-          </Card>
-          <Button
+          </div>
+          <button
             onClick={() => approveEvent(result.event)}
             disabled={approving}
-            className="w-full bg-indigo-600 hover:bg-indigo-700"
+            className="w-full py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-50"
+            style={{
+              background: "var(--accent-cyan-dim)",
+              color: "var(--accent-cyan)",
+              border: "1px solid rgba(56,189,248,0.3)",
+            }}
           >
             {approving
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />追加中…</>
-              : <><Check className="w-4 h-4 mr-2" />承認して予定に追加</>
+              ? <><Loader2 className="w-4 h-4 animate-spin" />追加中…</>
+              : <><Check className="w-4 h-4" />承認して予定に追加</>
             }
-          </Button>
+          </button>
         </div>
       )}
     </div>
