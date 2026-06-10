@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import { toast } from "sonner";
 import type { TaskData } from "@/types";
 import TaskModal from "./TaskModal";
 
@@ -54,13 +55,28 @@ export default function TaskCalendar() {
         }}
         buttonText={{ today: "今日", month: "月" }}
         events={calendarEvents}
+        editable
+        eventDurationEditable={false}
         dateClick={(info) => {
           setDefaultDeadline(`${info.dateStr}T23:59`);
           setModalOpen(true);
         }}
-        eventClick={(info) => {
-          const task = info.event.extendedProps.task as TaskData;
-          void task;
+        eventDrop={async (info) => {
+          const taskId = info.event.id;
+          const newDate = info.event.startStr;
+          if (!newDate) { info.revert(); return; }
+          const res = await fetch(`/api/tasks/${taskId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deadline: `${newDate}T23:59:00+09:00` }),
+          });
+          if (!res.ok) {
+            info.revert();
+            toast.error("期限の更新に失敗しました");
+          } else {
+            fetchTasks();
+            toast.success("期限を更新しました");
+          }
         }}
         height="auto"
       />

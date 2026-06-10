@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Loader2, Plus, RefreshCw, CheckCircle2, Circle,
-  Clock, CalendarDays, ChevronRight, Pencil, Scissors,
+  Clock, CalendarDays, ChevronRight, Pencil, Scissors, Trash2,
 } from "lucide-react";
 import TaskBreakdownDialog from "./TaskBreakdownDialog";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
   const [planningId, setPlanningId] = useState<string | null>(null);
   const [defaultDeadline, setDefaultDeadline] = useState<string | undefined>();
   const [breakdownTaskId, setBreakdownTaskId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function fetchTasks() {
     const res = await fetch("/api/tasks");
@@ -53,6 +54,22 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
     });
     fetchTasks();
     onTaskChange?.();
+  }
+
+  async function deleteTask(taskId: string) {
+    setDeletingId(taskId);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      toast.success("タスクを削除しました");
+      if (selectedId === taskId) setSelectedId(null);
+      fetchTasks();
+      onTaskChange?.();
+    } catch {
+      toast.error("削除に失敗しました");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   async function replan(taskId: string) {
@@ -164,6 +181,24 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
                     >
                       <Scissors className="w-3 h-3" />
                       細分化
+                    </button>
+                    <button
+                      className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
+                      style={{ color: "rgba(239,68,68,0.6)" }}
+                      title="削除"
+                      disabled={deletingId === task.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`「${task.title}」を削除しますか？`)) {
+                          deleteTask(task.id);
+                        }
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    >
+                      {deletingId === task.id
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <Trash2 className="w-3 h-3" />}
                     </button>
                     <ChevronRight
                       className="w-3.5 h-3.5 shrink-0 transition-transform"

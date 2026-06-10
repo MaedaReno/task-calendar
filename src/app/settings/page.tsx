@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Clock, LayoutTemplate, Trash2, Plus } from "lucide-react";
+import { Loader2, Clock, LayoutTemplate, Trash2, Plus, AlertTriangle } from "lucide-react";
 import type { UserSettingsData, TaskTemplateData, SubtaskTemplate } from "@/types";
 
 export default function SettingsPage() {
@@ -13,6 +13,8 @@ export default function SettingsPage() {
   const [workStart, setWorkStart] = useState("9");
   const [workEnd, setWorkEnd] = useState("21");
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
 
   const [templates, setTemplates] = useState<TaskTemplateData[]>([]);
   const [tmplTitle, setTmplTitle] = useState("");
@@ -251,6 +253,82 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Data reset */}
+      <div
+        className="rounded-2xl p-5 space-y-4"
+        style={{ background: "var(--glass-bg)", border: "1px solid rgba(239,68,68,0.2)" }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
+          >
+            <AlertTriangle className="w-4 h-4" style={{ color: "#ef4444" }} />
+          </div>
+          <h2 className="font-medium text-sm" style={{ color: "#ef4444" }}>データのリセット</h2>
+        </div>
+
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+          タスク・予定・サブタスクのデータをすべて削除します。この操作は取り消せません。
+        </p>
+
+        {resetConfirm ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium" style={{ color: "#ef4444" }}>
+              本当にすべてのデータを削除しますか？
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setResetConfirm(false)}
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                style={{
+                  background: "var(--glass-bg-hover)",
+                  color: "var(--text-secondary)",
+                  border: "1px solid var(--glass-border)",
+                }}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={async () => {
+                  setResetting(true);
+                  try {
+                    const res = await fetch("/api/admin/reset", { method: "DELETE" });
+                    if (res.ok) {
+                      toast.success("すべてのデータを削除しました");
+                      setResetConfirm(false);
+                    } else {
+                      toast.error("削除に失敗しました");
+                    }
+                  } finally {
+                    setResetting(false);
+                  }
+                }}
+                disabled={resetting}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                style={{ background: "#ef4444", color: "white" }}
+              >
+                {resetting && <Loader2 className="w-4 h-4 animate-spin" />}
+                削除する
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setResetConfirm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+            style={{
+              background: "rgba(239,68,68,0.1)",
+              color: "#ef4444",
+              border: "1px solid rgba(239,68,68,0.25)",
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+            全データを削除
+          </button>
         )}
       </div>
 

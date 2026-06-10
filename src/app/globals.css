@@ -286,3 +286,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ===================================================
+   FullCalendar drag fix: keep event visible while dragging
+   =================================================== */
+
+/* ドラッグ中の元イベントを半透明に（消えないように） */
+.fc-event-dragging:not(.fc-event-mirror) {
+  opacity: 0.7 !important;
+}
+
+/* ドラッグミラーを鮮明に */
+.fc-event-mirror {
+  opacity: 1 !important;
+}

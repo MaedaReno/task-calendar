@@ -7,6 +7,7 @@ import type { TaskData } from "@/types";
 
 type Message = { role: "ai" | "user"; content: string };
 type ProposedSubtask = { title: string; estimatedHours: number };
+type Options = string[];
 
 interface Props {
   task: TaskData;
@@ -17,6 +18,7 @@ interface Props {
 export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [currentOptions, setCurrentOptions] = useState<Options | null>(null);
   const [loading, setLoading] = useState(false);
   const [proposedSubtasks, setProposedSubtasks] = useState<ProposedSubtask[] | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,8 +58,10 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
       const data = await res.json();
       if (data.type === "question") {
         setMessages((prev) => [...prev, { role: "ai", content: data.message }]);
+        setCurrentOptions(data.options ?? null);
       } else if (data.type === "proposal") {
         setMessages((prev) => [...prev, { role: "ai", content: data.message }]);
+        setCurrentOptions(null);
         setProposedSubtasks(data.subtasks);
       }
     } catch {
@@ -67,12 +71,14 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
     }
   }
 
-  async function sendMessage() {
-    if (!input.trim() || loading) return;
-    const userMsg: Message = { role: "user", content: input.trim() };
+  async function sendMessage(text?: string) {
+    const content = (text ?? input).trim();
+    if (!content || loading) return;
+    const userMsg: Message = { role: "user", content };
     const next = [...messages, userMsg];
     setMessages(next);
     setInput("");
+    setCurrentOptions(null);
     await callAI(next);
   }
 
@@ -109,6 +115,7 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
   function retry() {
     setMessages([]);
     setProposedSubtasks(null);
+    setCurrentOptions(null);
     startedRef.current = false;
     setTimeout(() => {
       startedRef.current = true;
@@ -294,40 +301,63 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
           </div>
         ) : (
           <div
-            className="px-4 py-3 shrink-0 flex gap-2"
+            className="px-4 py-3 shrink-0 space-y-2"
             style={{ borderTop: "1px solid var(--glass-border)" }}
           >
-            <input
-              ref={inputRef}
-              className="flex-1 text-sm px-3 py-2 rounded-xl outline-none"
-              style={{
-                background: "var(--glass-bg-hover)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--glass-border)",
-              }}
-              placeholder="返答を入力…"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              disabled={loading}
-            />
-            <button
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
-              style={{
-                background: "var(--accent-violet-dim)",
-                color: "var(--accent-violet)",
-                border: "1px solid rgba(167,139,250,0.3)",
-              }}
-              onClick={sendMessage}
-              disabled={loading || !input.trim()}
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
+            {/* 選択肢ボタン */}
+            {currentOptions && currentOptions.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {currentOptions.map((opt, i) => (
+                  <button
+                    key={i}
+                    className="text-xs px-3 py-1.5 rounded-xl transition-all disabled:opacity-40"
+                    style={{
+                      background: "var(--accent-violet-dim)",
+                      color: "var(--accent-violet)",
+                      border: "1px solid rgba(167,139,250,0.3)",
+                    }}
+                    disabled={loading}
+                    onClick={() => sendMessage(opt)}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* テキスト入力（自由回答も可） */}
+            <div className="flex gap-2">
+              <input
+                ref={inputRef}
+                className="flex-1 text-sm px-3 py-2 rounded-xl outline-none"
+                style={{
+                  background: "var(--glass-bg-hover)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--glass-border)",
+                }}
+                placeholder={currentOptions ? "または自由に入力…" : "返答を入力…"}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                disabled={loading}
+              />
+              <button
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
+                style={{
+                  background: "var(--accent-violet-dim)",
+                  color: "var(--accent-violet)",
+                  border: "1px solid rgba(167,139,250,0.3)",
+                }}
+                onClick={() => sendMessage()}
+                disabled={loading || !input.trim()}
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </div>

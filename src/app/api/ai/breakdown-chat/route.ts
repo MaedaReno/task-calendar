@@ -17,7 +17,11 @@ const RequestSchema = z.object({
 });
 
 const ResponseSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("question"), message: z.string() }),
+  z.object({
+    type: z.literal("question"),
+    message: z.string(),
+    options: z.array(z.string()),
+  }),
   z.object({
     type: z.literal("proposal"),
     message: z.string(),
