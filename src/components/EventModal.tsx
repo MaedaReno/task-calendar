@@ -15,6 +15,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import VoiceInputButton from "./VoiceInputButton";
+import TimeSelect from "./TimeSelect";
+import {
+  jstToUTC,
+  utcToJSTDate,
+  utcToJSTTime,
+  todayJST,
+} from "@/lib/datetime";
 import type { EventData } from "@/types";
 
 interface Props {
@@ -25,10 +32,14 @@ interface Props {
   onSaved: () => void;
 }
 
-// UTC日時文字列 → JST の YYYY-MM-DD 文字列に変換
-function toJSTDateStr(utcStr: string): string {
-  const jst = new Date(new Date(utcStr).getTime() + 9 * 60 * 60 * 1000);
-  return jst.toISOString().slice(0, 10);
+// "HH:mm" に hours 時間を加算（24:00 を超えたら 23:45 に丸める）
+function addHours(time: string, hours: number): string {
+  const [h, m] = time.split(":").map(Number);
+  let total = h * 60 + m + hours * 60;
+  if (total > 23 * 60 + 45) total = 23 * 60 + 45;
+  const nh = Math.floor(total / 60);
+  const nm = total % 60;
+  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
 }
 
 export default function EventModal({
@@ -39,8 +50,9 @@ export default function EventModal({
   onSaved,
 }: Props) {
   const [title, setTitle] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:00");
   const [isAllDay, setIsAllDay] = useState(false);
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
@@ -48,11 +60,10 @@ export default function EventModal({
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  // 日付クリックで新規作成する場合: 日付固定・時刻のみ入力モード
+  // 日付クリック/範囲選択で新規作成する場合: 日付は固定（ラベル表示）
   const isNewWithDate = !event && !!defaultStart;
-  const baseDate = defaultStart ? defaultStart.slice(0, 10) : "";
-  const baseDateDisplay = baseDate
-    ? new Date(`${baseDate}T12:00:00`).toLocaleDateString("ja-JP", {
+  const dateDisplay = date
+    ? new Date(`${date}T12:00:00`).toLocaleDateString("ja-JP", {
         year: "numeric", month: "long", day: "numeric", weekday: "short",
       })
     : "";
@@ -60,8 +71,9 @@ export default function EventModal({
   useEffect(() => {
     if (event) {
       setTitle(event.title);
-      setStart(event.start.slice(0, 16));
-      setEnd(event.end.slice(0, 16));
+      setDate(utcToJSTDate(event.start));
+      setStartTime(utcToJSTTime(event.start));
+      setEndTime(utcToJSTTime(event.end));
       setIsAllDay(event.allDay ?? false);
       setDescription(event.description ?? "");
       setLocation(event.location ?? "");
@@ -74,17 +86,16 @@ export default function EventModal({
       setColor("#3b82f6");
 
       if (defaultStart) {
-        const date = defaultStart.slice(0, 10);
+        const d = defaultStart.slice(0, 10);
         const hasTime = defaultStart.length > 10 && defaultStart.includes("T");
-        const startHHMM = hasTime ? defaultStart.slice(11, 16) : "09:00";
-        const [h, m] = startHHMM.split(":").map(Number);
-        const endH = Math.min(h + 1, 23);
-        const endHHMM = `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-        setStart(`${date}T${startHHMM}`);
-        setEnd(`${date}T${endHHMM}`);
+        const st = hasTime ? defaultStart.slice(11, 16) : "09:00";
+        setDate(d);
+        setStartTime(st);
+        setEndTime(addHours(st, 1));
       } else {
-        setStart("");
-        setEnd("");
+        setDate(todayJST());
+        setStartTime("09:00");
+        setEndTime("10:00");
       }
     }
     setAiInput("");
@@ -103,8 +114,11 @@ export default function EventModal({
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setTitle(data.title ?? "");
-      setStart(data.start ? data.start.slice(0, 16) : "");
-      setEnd(data.end ? data.end.slice(0, 16) : "");
+      if (data.start) {
+        setDate(utcToJSTDate(data.start));
+        setStartTime(utcToJSTTime(data.start));
+      }
+      if (data.end) setEndTime(utcToJSTTime(data.end));
       setDescription(data.description ?? "");
       setIsAllDay(false);
       toast.success("予定を解析しました");
@@ -115,42 +129,25 @@ export default function EventModal({
     }
   }
 
-  function handleSetAllDay() {
-    setIsAllDay(true);
-  }
-
-  function handleCancelAllDay() {
-    setIsAllDay(false);
-    // 時刻入力を復元（基準日を維持）
-    const date = isNewWithDate ? baseDate : (start ? start.slice(0, 10) : new Date().toISOString().slice(0, 10));
-    setStart(`${date}T09:00`);
-    setEnd(`${date}T10:00`);
-  }
-
-  // allDay 保存用の JST 日付文字列を取得
-  function getAllDayDate(): string {
-    if (isNewWithDate) return baseDate;
-    if (event) return toJSTDateStr(event.start);
-    if (start) return start.slice(0, 10); // ユーザーが入力した日付
-    return new Date().toISOString().slice(0, 10);
-  }
-
   async function save() {
     if (!title) {
       toast.error("タイトルは必須です");
       return;
     }
-    if (!isAllDay && (!start || !end)) {
-      toast.error("開始・終了時刻は必須です");
+    if (!date) {
+      toast.error("日付は必須です");
+      return;
+    }
+    if (!isAllDay && endTime <= startTime) {
+      toast.error("終了時刻は開始時刻より後にしてください");
       return;
     }
 
-    const date = getAllDayDate();
     const body = {
       title,
       allDay: isAllDay,
-      start: isAllDay ? `${date}T00:00:00+09:00` : new Date(start).toISOString(),
-      end: isAllDay ? `${date}T23:59:59+09:00` : new Date(end).toISOString(),
+      start: isAllDay ? jstToUTC(date, "00:00") : jstToUTC(date, startTime),
+      end: isAllDay ? jstToUTC(date, "23:59") : jstToUTC(date, endTime),
       description,
       location,
       color,
@@ -242,7 +239,7 @@ export default function EventModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleCancelAllDay}
+                  onClick={() => setIsAllDay(false)}
                   className="text-xs h-7 px-2 text-slate-500"
                 >
                   時刻を指定する
@@ -252,7 +249,7 @@ export default function EventModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleSetAllDay}
+                  onClick={() => setIsAllDay(true)}
                   className="text-xs h-7 px-2 text-indigo-600 border-indigo-300 hover:bg-indigo-50"
                 >
                   終日
@@ -260,64 +257,35 @@ export default function EventModal({
               )}
             </div>
 
-            {/* 日付クリックで開いた場合: 日付ラベル表示 */}
-            {isNewWithDate && (
+            {/* 日付: 日付クリック新規は固定ラベル、それ以外は日付入力 */}
+            {isNewWithDate ? (
               <div className="text-sm font-medium text-slate-700 py-2 px-3 bg-slate-50 rounded-md border border-slate-200">
-                {baseDateDisplay}
+                {dateDisplay}
+              </div>
+            ) : (
+              <div>
+                <Label className="text-xs text-slate-500">日付</Label>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
               </div>
             )}
 
             {isAllDay ? (
-              /* 終日モード */
               <div className="py-2 px-3 bg-indigo-50 rounded-md border border-indigo-200 text-sm text-indigo-700 font-medium">
                 終日
-                {!isNewWithDate && (
-                  <span className="ml-2 text-xs text-indigo-400 font-normal">
-                    ({event
-                      ? toJSTDateStr(event.start)
-                      : start ? start.slice(0, 10) : ""
-                    })
-                  </span>
-                )}
               </div>
-            ) : isNewWithDate ? (
-              /* 日付クリック新規 + 時刻のみ */
+            ) : (
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs text-slate-500">開始時刻</Label>
-                  <Input
-                    type="time"
-                    value={start.length >= 16 ? start.slice(11, 16) : "09:00"}
-                    onChange={(e) => setStart(`${baseDate}T${e.target.value}`)}
-                  />
+                  <TimeSelect value={startTime} onChange={setStartTime} />
                 </div>
                 <div>
                   <Label className="text-xs text-slate-500">終了時刻</Label>
-                  <Input
-                    type="time"
-                    value={end.length >= 16 ? end.slice(11, 16) : "10:00"}
-                    onChange={(e) => setEnd(`${baseDate}T${e.target.value}`)}
-                  />
-                </div>
-              </div>
-            ) : (
-              /* 編集 or 日付なし新規: datetime-local */
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs text-slate-500">開始</Label>
-                  <Input
-                    type="datetime-local"
-                    value={start}
-                    onChange={(e) => setStart(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-slate-500">終了</Label>
-                  <Input
-                    type="datetime-local"
-                    value={end}
-                    onChange={(e) => setEnd(e.target.value)}
-                  />
+                  <TimeSelect value={endTime} onChange={setEndTime} />
                 </div>
               </div>
             )}

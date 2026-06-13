@@ -25,6 +25,7 @@ model Task {
   id             String    @id @default(cuid())
   title          String
   description    String?
+  startDate      DateTime?
   deadline       DateTime
   priority       String    @default("medium")
   status         String    @default("pending")

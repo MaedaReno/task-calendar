@@ -5,6 +5,7 @@ import { z } from "zod";
 const UpdateSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
+  startDate: z.string().nullable().optional(),
   deadline: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]).optional(),
   status: z.enum(["pending", "in_progress", "done"]).optional(),
@@ -35,12 +36,15 @@ export async function PUT(
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { deadline, ...rest } = parsed.data;
+  const { deadline, startDate, ...rest } = parsed.data;
   const task = await prisma.task.update({
     where: { id },
     data: {
       ...rest,
       ...(deadline ? { deadline: new Date(deadline) } : {}),
+      ...(startDate !== undefined
+        ? { startDate: startDate ? new Date(startDate) : null }
+        : {}),
     },
     include: { subtasks: { orderBy: { order: "asc" } } },
   });

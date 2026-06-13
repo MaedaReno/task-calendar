@@ -7,6 +7,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import { jstToUTC, utcToJSTDate, addDays } from "@/lib/datetime";
 import type { EventData, TaskData } from "@/types";
 
 interface Props {
@@ -14,20 +15,33 @@ interface Props {
   onSubtaskToggled?: () => void;
 }
 
+type View = "day" | "week";
+
+// JST の日付文字列から、その週の日曜始まりの週範囲を求める
+function weekRange(dayStr: string): { from: string; to: string } {
+  const dow = new Date(`${dayStr}T12:00:00+09:00`).getUTCDay(); // 0=日
+  const from = addDays(dayStr, -dow);
+  return { from, to: addDays(from, 6) };
+}
+
 export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
   const calendarRef = useRef<FullCalendar>(null);
+  const [view, setView] = useState<View>("day");
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [events, setEvents] = useState<EventData[]>([]);
   const [tasks, setTasks] = useState<TaskData[]>([]);
 
-  const fetchData = useCallback(async (date: Date) => {
-    const from = new Date(date);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(date);
-    to.setHours(23, 59, 59, 999);
+  const dayStr = utcToJSTDate(currentDate.toISOString());
+  const range =
+    view === "week"
+      ? weekRange(dayStr)
+      : { from: dayStr, to: dayStr };
+  const fromISO = jstToUTC(range.from, "00:00");
+  const toISO = jstToUTC(range.to, "23:59");
 
+  const fetchData = useCallback(async (fISO: string, tISO: string) => {
     const [evRes, taskRes] = await Promise.all([
-      fetch(`/api/events?from=${from.toISOString()}&to=${to.toISOString()}`),
+      fetch(`/api/events?from=${fISO}&to=${tISO}`),
       fetch("/api/tasks"),
     ]);
     if (evRes.ok) setEvents(await evRes.json());
@@ -35,35 +49,40 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
   }, []);
 
   useEffect(() => {
-    fetchData(currentDate);
-  }, [currentDate, fetchData, refresh]);
+    fetchData(fromISO, toISO);
+  }, [fromISO, toISO, fetchData, refresh]);
 
   function navigate(dir: -1 | 0 | 1) {
+    const step = view === "week" ? 7 : 1;
     const d = new Date(currentDate);
     if (dir === 0) {
       d.setTime(Date.now());
     } else {
-      d.setDate(d.getDate() + dir);
+      d.setDate(d.getDate() + dir * step);
     }
     setCurrentDate(d);
     calendarRef.current?.getApi().gotoDate(d);
   }
 
-  function isOnCurrentDay(utcStr: string): boolean {
-    const jstMs = new Date(utcStr).getTime() + 9 * 60 * 60 * 1000;
-    const dayMs = new Date(currentDate).getTime() + 9 * 60 * 60 * 1000;
-    return new Date(jstMs).toISOString().slice(0, 10) ===
-           new Date(dayMs).toISOString().slice(0, 10);
+  function switchView(next: View) {
+    setView(next);
+    calendarRef.current
+      ?.getApi()
+      .changeView(next === "week" ? "timeGridWeek" : "timeGridDay");
+  }
+
+  // ISO(UTC) 文字列が現在の表示範囲内かどうか
+  function isInRange(utcStr: string): boolean {
+    return utcStr >= fromISO && utcStr <= toISO;
   }
 
   const calendarEvents = [
     ...events.map((e) => {
       if (e.allDay) {
-        const jst = new Date(new Date(e.start).getTime() + 9 * 60 * 60 * 1000);
         return {
           id: `ev-${e.id}`,
           title: e.title,
-          start: jst.toISOString().slice(0, 10),
+          start: utcToJSTDate(e.start),
           allDay: true,
           backgroundColor: e.color,
           borderColor: "transparent",
@@ -82,7 +101,7 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
     }),
     ...tasks.flatMap((task) =>
       (task.subtasks ?? [])
-        .filter((s) => s.scheduledStart && isOnCurrentDay(s.scheduledStart))
+        .filter((s) => s.scheduledStart && isInRange(s.scheduledStart))
         .map((s) => ({
           id: `sub-${s.id}`,
           title: s.title,
@@ -105,12 +124,16 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: next }),
       });
-      fetchData(currentDate);
+      fetchData(fromISO, toISO);
       onSubtaskToggled?.();
     }
   }
 
   const isToday = new Date().toDateString() === currentDate.toDateString();
+  const headerLabel =
+    view === "week"
+      ? `${format(new Date(`${range.from}T12:00:00+09:00`), "M/d", { locale: ja })} 〜 ${format(new Date(`${range.to}T12:00:00+09:00`), "M/d", { locale: ja })}`
+      : format(currentDate, "M月d日 (E)", { locale: ja });
 
   return (
     <div
@@ -143,10 +166,10 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
 
         <span
           className="font-medium text-sm ml-1"
-          style={{ color: isToday ? "var(--accent-cyan)" : "var(--text-primary)" }}
+          style={{ color: isToday && view === "day" ? "var(--accent-cyan)" : "var(--text-primary)" }}
         >
-          {format(currentDate, "M月d日 (E)", { locale: ja })}
-          {isToday && (
+          {headerLabel}
+          {isToday && view === "day" && (
             <span className="ml-2 text-xs font-normal" style={{ color: "var(--accent-cyan)", opacity: 0.7 }}>
               今日
             </span>
@@ -155,7 +178,7 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
 
         {!isToday && (
           <button
-            className="ml-auto text-xs px-2.5 py-1 rounded-lg transition-all"
+            className="ml-2 text-xs px-2.5 py-1 rounded-lg transition-all"
             style={{
               background: "var(--glass-bg-hover)",
               color: "var(--text-secondary)",
@@ -167,19 +190,22 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
           </button>
         )}
 
-        {/* Legend */}
-        <div
-          className="flex items-center gap-3 ml-auto text-xs"
-          style={{ color: "var(--text-muted)" }}
-        >
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-2 h-2 rounded-sm" style={{ background: "var(--accent-cyan)" }} />
-            予定
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-2 h-2 rounded-sm" style={{ background: "var(--accent-violet)" }} />
-            タスク
-          </span>
+        {/* View toggle */}
+        <div className="ml-auto flex items-center gap-1">
+          {(["day", "week"] as const).map((v) => (
+            <button
+              key={v}
+              className="text-xs px-2.5 py-1 rounded-lg transition-all"
+              style={{
+                background: view === v ? "var(--accent-cyan-dim)" : "var(--glass-bg-hover)",
+                color: view === v ? "var(--accent-cyan)" : "var(--text-secondary)",
+                border: view === v ? "1px solid rgba(56,189,248,0.3)" : "1px solid var(--glass-border)",
+              }}
+              onClick={() => switchView(v)}
+            >
+              {v === "day" ? "日" : "週"}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -193,6 +219,7 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
           timeZone="Asia/Tokyo"
           locale="ja"
           headerToolbar={false}
+          dayHeaderFormat={{ weekday: "short", day: "numeric" }}
           events={calendarEvents}
           eventClick={handleEventClick}
           height="100%"
@@ -209,7 +236,7 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
         className="text-center text-xs py-1.5 shrink-0"
         style={{ color: "var(--text-muted)", borderTop: "1px solid var(--glass-border)" }}
       >
-        タスクブロックをクリックで完了/未完了を切り替え
+        タスクブロックをクリックで完了/未完了を切り替え · 「週」で期間全体を表示
       </p>
     </div>
   );

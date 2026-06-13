@@ -237,6 +237,61 @@ ${
 }`;
 }
 
+// AIによる予定/タスク追加の「質問で深掘り」用プロンプト。
+// 細分化チャットと同様に、不足情報を選択肢中心の質問で補い、最後に提案(proposal)を返す。
+export function autoChatPrompt(
+  history: { role: "ai" | "user"; content: string }[]
+): string {
+  const firstInput =
+    history.find((h) => h.role === "user")?.content ?? "";
+  const historyText =
+    history.length === 0
+      ? "（まだ会話はありません）"
+      : history
+          .map((h) => `${h.role === "ai" ? "AI" : "ユーザー"}: ${h.content}`)
+          .join("\n");
+
+  const userTurns = history.filter((h) => h.role === "user").length;
+  // 最初の入力を含めユーザー発話が3回に達したら提案へ
+  const shouldPropose = userTurns >= 3;
+
+  return `あなたはタスク・カレンダー管理アシスタントです。
+現在日時: ${nowJST()} (JST)
+
+ユーザーの最初の入力と会話履歴から、内容が「予定(event: 日時が決まった出来事)」か「タスク(task: 達成すべき作業)」かを判断し、登録に必要な情報を補うための対話を行います。
+
+最初の入力: ${firstInput}
+
+会話履歴:
+${historyText}
+
+${
+  shouldPropose
+    ? `十分な情報が集まりました。判断した種別に応じて proposal を返してください。
+- 予定(event): タイトルと開始・終了日時を確定する。
+- タスク(task): タイトル・開始日・期日・推定作業時間を確定する。`
+    : `登録に必要な情報のうち、まだ不明なものを1つだけ質問してください。
+ルール:
+- 質問は短く（25字以内）。
+- 原則は「選択肢で答えられる質問」にする（options に2〜4個、各12字以内）。
+- 選択肢では正確に表現できず、記述式の方が明らかに効率的で正確な場合（固有名詞・具体的な数値・自由な説明が必要なときなど）のみ、options を空配列 [] にして記述式の質問にする。
+- すでに分かっている内容や聞いた内容は繰り返さない。
+- 日時・期間・規模・成果物など登録に直結する情報を優先して聞く。`
+}
+
+必ずJSONのみで返してください（説明文・コードブロック不要）。
+${
+  shouldPropose
+    ? `予定の場合:
+{"type":"proposal","kind":"event","message":"確認用の一言","event":{"title":"...","start":"YYYY-MM-DDTHH:mm:ss+09:00","end":"YYYY-MM-DDTHH:mm:ss+09:00","description":"説明（任意）"}}
+タスクの場合:
+{"type":"proposal","kind":"task","message":"確認用の一言","tasks":[{"title":"...","description":"...","estimatedHours":数値,"startDate":"YYYY-MM-DDTHH:mm:ss+09:00","suggestedDeadline":"YYYY-MM-DDTHH:mm:ss+09:00"}]}
+時刻が不明な場合はその日の09:00〜10:00、終了時刻が不明な場合は開始の1時間後。開始日が不明な場合は今日にする。`
+    : `選択肢の質問: {"type":"question","message":"質問文","options":["選択肢1","選択肢2"]}
+記述式の質問: {"type":"question","message":"質問文","options":[]}`
+}`;
+}
+
 export function dashboardCommentPrompt(
   todayEvents: EventData[],
   todaySubtasks: SubTaskData[],

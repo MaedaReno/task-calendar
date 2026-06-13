@@ -5,6 +5,7 @@ import { z } from "zod";
 const TaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
+  startDate: z.string().optional(),
   deadline: z.string(),
   priority: z.enum(["low", "medium", "high"]).default("medium"),
   status: z.enum(["pending", "in_progress", "done"]).default("pending"),
@@ -27,10 +28,12 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
+  const { startDate, ...taskRest } = parsed.data;
   const task = await prisma.task.create({
     data: {
-      ...parsed.data,
+      ...taskRest,
       deadline: new Date(parsed.data.deadline),
+      ...(startDate ? { startDate: new Date(startDate) } : {}),
     },
     include: { subtasks: true },
   });

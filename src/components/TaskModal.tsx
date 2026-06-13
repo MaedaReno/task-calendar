@@ -19,12 +19,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import TimeSelect from "./TimeSelect";
+import {
+  jstToUTC,
+  utcToJSTDate,
+  utcToJSTTime,
+  todayJST,
+} from "@/lib/datetime";
 import type { TaskData, TaskTemplateData } from "@/types";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   task?: TaskData | null;
+  // 新規作成時の初期期間（"YYYY-MM-DD"）
+  defaultStartDate?: string;
+  // 新規作成時の初期期日（"YYYY-MM-DD" もしくは "YYYY-MM-DDTHH:mm"）
   defaultDeadline?: string;
   // 新規作成時は TaskData を受け取れる（既存コードとの互換性維持のため optional）
   onSaved: (newTask?: TaskData) => void;
@@ -38,10 +48,19 @@ const COLORS = [
   { label: "橙", value: "#f97316" },
 ];
 
-export default function TaskModal({ open, onClose, task, defaultDeadline, onSaved }: Props) {
+export default function TaskModal({
+  open,
+  onClose,
+  task,
+  defaultStartDate,
+  defaultDeadline,
+  onSaved,
+}: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [deadline, setDeadline] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [deadlineDate, setDeadlineDate] = useState("");
+  const [deadlineTime, setDeadlineTime] = useState("23:45");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [estimatedHours, setEstimatedHours] = useState("");
   const [color, setColor] = useState("#8b5cf6");
@@ -58,19 +77,29 @@ export default function TaskModal({ open, onClose, task, defaultDeadline, onSave
     if (task) {
       setTitle(task.title);
       setDescription(task.description ?? "");
-      setDeadline(task.deadline.slice(0, 16));
+      setStartDate(
+        task.startDate ? utcToJSTDate(task.startDate) : utcToJSTDate(task.deadline)
+      );
+      setDeadlineDate(utcToJSTDate(task.deadline));
+      setDeadlineTime(utcToJSTTime(task.deadline));
       setPriority(task.priority);
       setEstimatedHours(task.estimatedHours?.toString() ?? "");
       setColor(task.color);
     } else {
       setTitle("");
       setDescription("");
-      setDeadline(defaultDeadline ?? "");
+      setStartDate(defaultStartDate ?? todayJST());
+      setDeadlineDate(defaultDeadline ? defaultDeadline.slice(0, 10) : todayJST());
+      setDeadlineTime(
+        defaultDeadline && defaultDeadline.length >= 16
+          ? defaultDeadline.slice(11, 16)
+          : "23:45"
+      );
       setPriority("medium");
       setEstimatedHours("");
       setColor("#8b5cf6");
     }
-  }, [task, defaultDeadline, open]);
+  }, [task, defaultStartDate, defaultDeadline, open]);
 
   function applyTemplate(id: string | null) {
     if (!id) return;
@@ -82,14 +111,19 @@ export default function TaskModal({ open, onClose, task, defaultDeadline, onSave
   }
 
   async function save() {
-    if (!title || !deadline) {
+    if (!title || !deadlineDate) {
       toast.error("タイトルと期日は必須です");
+      return;
+    }
+    if (startDate && startDate > deadlineDate) {
+      toast.error("開始日は期日より前にしてください");
       return;
     }
     const body = {
       title,
       description,
-      deadline: new Date(deadline).toISOString(),
+      startDate: jstToUTC(startDate || deadlineDate, "00:00"),
+      deadline: jstToUTC(deadlineDate, deadlineTime),
       priority,
       estimatedHours: estimatedHours ? parseFloat(estimatedHours) : undefined,
       color,
@@ -165,14 +199,33 @@ export default function TaskModal({ open, onClose, task, defaultDeadline, onSave
               rows={2}
             />
           </div>
+
+          {/* 期間: 開始日 〜 期日 */}
           <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label>開始日</Label>
+              <Input
+                type="date"
+                value={startDate}
+                max={deadlineDate || undefined}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
             <div>
               <Label>期日 *</Label>
               <Input
-                type="datetime-local"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                type="date"
+                value={deadlineDate}
+                min={startDate || undefined}
+                onChange={(e) => setDeadlineDate(e.target.value)}
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label>締切時刻</Label>
+              <TimeSelect value={deadlineTime} onChange={setDeadlineTime} />
             </div>
             <div>
               <Label>見積時間 (h)</Label>
@@ -185,6 +238,7 @@ export default function TaskModal({ open, onClose, task, defaultDeadline, onSave
               />
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label>優先度</Label>

@@ -17,6 +17,7 @@ export interface TaskData {
   id: string;
   title: string;
   description?: string | null;
+  startDate?: string | null;
   deadline: string;
   priority: Priority;
   status: TaskStatus;
