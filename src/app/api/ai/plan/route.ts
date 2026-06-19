@@ -1,21 +1,10 @@
 import { NextRequest } from "next/server";
-
-export const maxDuration = 60;
-import { z } from "zod";
-import { getModel } from "@/lib/gemini";
-import { executionPlanPrompt } from "@/lib/ai-prompts";
-import { handleAIError, withRetry, withTimeout, AIError } from "@/lib/ai-error";
 import { prisma } from "@/lib/prisma";
-import type { SubTaskData, EventData, UserSettingsData } from "@/types";
+import { schedule, type BusyBlock, type SchedulerTaskInput } from "@/lib/scheduler";
+import type { PlanResponse, Priority } from "@/types";
 
-const ResponseSchema = z.array(
-  z.object({
-    subtaskId: z.string(),
-    scheduledStart: z.string(),
-    scheduledEnd: z.string(),
-  })
-);
-
+// LLM 配置をやめ、決定論スケジューラ(lib/scheduler.ts)で配置する。
+// このルートは「DB読取 → schedule() → DB書込」のアダプタに徹する。
 export async function POST(req: NextRequest) {
   try {
     const { taskId } = await req.json();
@@ -35,75 +24,59 @@ export async function POST(req: NextRequest) {
       update: {},
     });
 
+    // 探索範囲に「部分的にでも重なる」既存予定を取得する(区間重複の正しい判定)。
+    const now = new Date();
+    const rangeStart = task.startDate && task.startDate > now ? task.startDate : now;
     const events = await prisma.event.findMany({
       where: {
-        start: { gte: new Date() },
-        end: { lte: task.deadline },
+        start: { lt: task.deadline },
+        end: { gt: rangeStart },
       },
     });
 
-    const subtasks: SubTaskData[] = task.subtasks.map((s) => ({
-      id: s.id,
-      taskId: s.taskId,
-      title: s.title,
-      estimatedHours: s.estimatedHours,
-      order: s.order,
-      status: s.status as SubTaskData["status"],
-      scheduledStart: s.scheduledStart?.toISOString() ?? null,
-      scheduledEnd: s.scheduledEnd?.toISOString() ?? null,
-    }));
-
-    const eventData: EventData[] = events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      start: e.start.toISOString(),
-      end: e.end.toISOString(),
-      color: e.color,
-    }));
-
-    const settingsData: UserSettingsData = {
-      id: settings.id,
-      workStartHour: settings.workStartHour,
-      workEndHour: settings.workEndHour,
-      timezone: settings.timezone,
+    const schedulerTask: SchedulerTaskInput = {
+      priority: task.priority as Priority,
+      deadlineUtc: task.deadline.toISOString(),
+      startDateUtc: task.startDate?.toISOString() ?? null,
+      subtasks: task.subtasks.map((s) => ({
+        id: s.id,
+        order: s.order,
+        estimatedHours: s.estimatedHours,
+        title: s.title,
+      })),
     };
 
-    const model = getModel();
-    const prompt = executionPlanPrompt(
-      subtasks,
-      eventData,
-      settingsData,
-      task.deadline.toISOString()
-    );
+    const busy: BusyBlock[] = events.map((e) => ({
+      startUtc: e.start.toISOString(),
+      endUtc: e.end.toISOString(),
+    }));
 
-    const result = await withTimeout(() =>
-      withRetry(async () => {
-        const res = await model.generateContent(prompt);
-        return res.response.text();
-      })
-    );
+    const result = schedule(schedulerTask, busy, {
+      workStartHour: settings.workStartHour,
+      workEndHour: settings.workEndHour,
+      nowUtc: now.toISOString(),
+    });
 
-    const parsed = ResponseSchema.safeParse(JSON.parse(result));
-    if (!parsed.success) throw new AIError("ai_parse_error");
-
-    // スケジュールをDBに保存
-    await Promise.all(
-      parsed.data.map((item) =>
+    // 再計画では、対象タスクの配置を一旦クリアしてから placed のみ書き戻す
+    // (前回配置されたが今回未配置になったサブタスクの幽霊配置を防ぐ)。
+    await prisma.$transaction([
+      prisma.subTask.updateMany({
+        where: { taskId },
+        data: { scheduledStart: null, scheduledEnd: null },
+      }),
+      ...result.placed.map((p) =>
         prisma.subTask.update({
-          where: { id: item.subtaskId },
+          where: { id: p.subtaskId },
           data: {
-            scheduledStart: new Date(item.scheduledStart),
-            scheduledEnd: new Date(item.scheduledEnd),
+            scheduledStart: new Date(p.scheduledStartUtc),
+            scheduledEnd: new Date(p.scheduledEndUtc),
           },
         })
-      )
-    );
+      ),
+    ]);
 
-    // サブタスク合計時間がtask.estimatedHoursを超えたら更新
-    const totalHours = task.subtasks.reduce(
-      (sum, s) => sum + (s.estimatedHours ?? 0),
-      0
-    );
+    // サブタスク合計時間が task.estimatedHours を超えたら更新(従来動作を踏襲)
+    const totalHours = task.subtasks.reduce((sum, s) => sum + (s.estimatedHours ?? 0), 0);
     if (task.estimatedHours !== null && totalHours > (task.estimatedHours ?? 0)) {
       await prisma.task.update({
         where: { id: taskId },
@@ -111,8 +84,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return Response.json(parsed.data);
+    const response: PlanResponse = {
+      placed: result.placed.map((p) => ({
+        subtaskId: p.subtaskId,
+        scheduledStart: p.scheduledStartUtc,
+        scheduledEnd: p.scheduledEndUtc,
+      })),
+      unplaced: result.unplaced,
+    };
+    return Response.json(response);
   } catch (err) {
-    return handleAIError(err);
+    console.error("[ai/plan] error:", err);
+    return Response.json({ error: "plan_failed" }, { status: 500 });
   }
 }

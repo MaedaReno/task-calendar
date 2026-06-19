@@ -45,7 +45,13 @@ export default function TaskList() {
         body: JSON.stringify({ taskId }),
       });
       if (!res.ok) throw new Error();
-      toast.success("実行計画を更新しました");
+      const data = await res.json();
+      const n = data?.unplaced?.length ?? 0;
+      if (n > 0) {
+        toast.warning(`${n}件のサブタスクは締切までに収まりませんでした。締切や見積り時間を見直してください`);
+      } else {
+        toast.success("実行計画を更新しました");
+      }
       fetchTasks();
     } catch {
       toast.error("実行計画の生成に失敗しました");

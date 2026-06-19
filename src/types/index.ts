@@ -94,3 +94,28 @@ export interface AIErrorResponse {
   error: AIErrorCode;
   message?: string;
 }
+
+// 決定論スケジューラ(/api/ai/plan)の結果型
+export type UnplacedReason =
+  | "no_time_before_deadline"
+  | "longer_than_workday"
+  | "invalid_estimate"
+  | "invalid_work_window"
+  | "deadline_in_past";
+
+export interface PlanPlacedSubtask {
+  subtaskId: string;
+  scheduledStart: string; // UTC ISO
+  scheduledEnd: string; // UTC ISO
+}
+
+export interface PlanUnplacedSubtask {
+  subtaskId: string;
+  title: string;
+  reason: UnplacedReason;
+}
+
+export interface PlanResponse {
+  placed: PlanPlacedSubtask[];
+  unplaced: PlanUnplacedSubtask[];
+}

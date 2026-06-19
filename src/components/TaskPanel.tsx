@@ -81,7 +81,13 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
         body: JSON.stringify({ taskId }),
       });
       if (!res.ok) throw new Error();
-      toast.success("スケジュールを更新しました");
+      const data = await res.json();
+      const n = data?.unplaced?.length ?? 0;
+      if (n > 0) {
+        toast.warning(`${n}件のサブタスクは締切までに収まりませんでした。締切や見積り時間を見直してください`);
+      } else {
+        toast.success("スケジュールを更新しました");
+      }
       fetchTasks();
       onTaskChange?.();
     } catch {
@@ -140,9 +146,11 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
               const isSelected = task.id === selectedId;
 
               return (
-                <button
+                <div
                   key={task.id}
-                  className="w-full text-left px-4 py-3 transition-all"
+                  role="button"
+                  tabIndex={0}
+                  className="w-full text-left px-4 py-3 transition-all cursor-pointer"
                   style={{
                     borderBottom: "1px solid var(--glass-border)",
                     background: isSelected ? "var(--accent-violet-dim)" : "transparent",
@@ -154,6 +162,12 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
                     if (!isSelected) (e.currentTarget as HTMLElement).style.background = "transparent";
                   }}
                   onClick={() => setSelectedId(isSelected ? null : task.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedId(isSelected ? null : task.id);
+                    }
+                  }}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: task.color }} />
@@ -226,7 +240,7 @@ export default function TaskPanel({ refresh, onTaskChange }: Props) {
                       />
                     </div>
                   )}
-                </button>
+                </div>
               );
             })
           )}
