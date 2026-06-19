@@ -30,6 +30,7 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [events, setEvents] = useState<EventData[]>([]);
   const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [work, setWork] = useState({ start: 9, end: 21 });
 
   const dayStr = utcToJSTDate(currentDate.toISOString());
   const range =
@@ -51,6 +52,16 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
   useEffect(() => {
     fetchData(fromISO, toISO);
   }, [fromISO, toISO, fetchData, refresh]);
+
+  // 作業可能時間帯(設定)をタイムラインの表示範囲に反映する
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s) => {
+        if (s) setWork({ start: s.workStartHour, end: s.workEndHour });
+      })
+      .catch(() => {});
+  }, []);
 
   function navigate(dir: -1 | 0 | 1) {
     const step = view === "week" ? 7 : 1;
@@ -223,8 +234,8 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
           events={calendarEvents}
           eventClick={handleEventClick}
           height="100%"
-          slotMinTime="06:00:00"
-          slotMaxTime="24:00:00"
+          slotMinTime={`${String(work.start).padStart(2, "0")}:00:00`}
+          slotMaxTime={`${String(work.end).padStart(2, "0")}:00:00`}
           allDayText="終日"
           slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
           eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}

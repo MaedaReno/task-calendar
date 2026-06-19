@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -31,9 +31,14 @@ export default function VoiceInputButton({ onResult }: Props) {
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
-  const supported =
-    typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  // SSR と初回クライアント描画を一致させ hydration mismatch を防ぐため、
+  // SpeechRecognition の対応可否はマウント後(useEffect)に確定する。
+  const [supported, setSupported] = useState(false);
+  useEffect(() => {
+    setSupported(
+      "SpeechRecognition" in window || "webkitSpeechRecognition" in window
+    );
+  }, []);
 
   if (!supported) return null;
 

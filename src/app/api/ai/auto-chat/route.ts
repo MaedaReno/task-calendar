@@ -12,7 +12,10 @@ const RequestSchema = z.object({
   ),
 });
 
-const ResponseSchema = z.discriminatedUnion("type", [
+// 注: type:"proposal" が event/task の2バリアントで重複するため
+// z.discriminatedUnion("type", …) は使えない（Duplicate discriminator value で throw）。
+// z.union で question / proposal(event) / proposal(task) を検証する。
+const ResponseSchema = z.union([
   z.object({
     type: z.literal("question"),
     message: z.string(),

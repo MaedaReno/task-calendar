@@ -6,16 +6,19 @@ import { getModel } from "@/lib/gemini";
 import { dashboardCommentPrompt } from "@/lib/ai-prompts";
 import { handleAIError, withRetry, withTimeout, AIError } from "@/lib/ai-error";
 import { prisma } from "@/lib/prisma";
+import { todayJST, jstToUTC, addDays } from "@/lib/datetime";
 import type { EventData, SubTaskData } from "@/types";
 
 const ResponseSchema = z.object({ comment: z.string() });
 
 export async function GET(_req: NextRequest) {
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    // JST 固定運用。ローカルTZ依存の setHours ではなく lib/datetime のJST境界を使う。
+    const today = todayJST();
+    const todayStart = new Date(jstToUTC(today, "00:00"));
+    const todayEnd = new Date(
+      new Date(jstToUTC(addDays(today, 1), "00:00")).getTime() - 1
+    );
 
     const [events, subtasks, settings] = await Promise.all([
       prisma.event.findMany({
