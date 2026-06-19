@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import { todayJST, addDays } from "@/lib/datetime";
 import type { SubTaskData, EventData, UserSettingsData } from "@/types";
 
 const TZ = "Asia/Tokyo";
@@ -8,9 +9,25 @@ function nowJST() {
   return format(toZonedTime(new Date(), TZ), "yyyy-MM-dd HH:mm");
 }
 
+const WD = ["日", "月", "火", "水", "木", "金", "土"];
+function weekdayJP(dateStr: string): string {
+  // 正午で評価して日付境界のズレを避ける
+  return WD[new Date(`${dateStr}T12:00:00+09:00`).getUTCDay()];
+}
+
+// LLM の相対日付解釈を補助するため、現在日時に加えて曜日と解決済み候補日を渡す。
+function dateContext(): string {
+  const today = todayJST();
+  const tomorrow = addDays(today, 1);
+  const dayAfter = addDays(today, 2);
+  return `現在日時: ${nowJST()} (JST, ${weekdayJP(today)}曜日)
+参考日付: 今日=${today}(${weekdayJP(today)}) / 明日=${tomorrow}(${weekdayJP(tomorrow)}) / 明後日=${dayAfter}(${weekdayJP(dayAfter)})
+相対表現(来週・今週末・N日後など)は上記を基準に必ず具体的な日付へ解決すること。`;
+}
+
 export function extractTasksPrompt(input: string): string {
   return `あなたはタスク管理アシスタントです。
-現在日時: ${nowJST()} (JST)
+${dateContext()}
 
 ユーザーの入力から具体的なタスクを抽出し、以下のJSON形式で返してください。
 コードブロックや説明文は不要です。JSONのみ返してください。
@@ -36,7 +53,7 @@ export function breakdownPrompt(
   estimatedHours?: number | null
 ): string {
   return `あなたはタスク管理アシスタントです。
-現在日時: ${nowJST()} (JST)
+${dateContext()}
 
 以下のタスクを実行可能なサブタスクに分解してください。
 コードブロックや説明文は不要です。JSONのみ返してください。
@@ -73,7 +90,7 @@ export function executionPlanPrompt(
           .join("\n");
 
   return `あなたはスケジューリングアシスタントです。
-現在日時: ${nowJST()} (JST)
+${dateContext()}
 
 以下のサブタスクを、既存の予定を避けて、期日までにスケジューリングしてください。
 作業可能時間: ${settings.workStartHour}:00〜${settings.workEndHour}:00
@@ -101,7 +118,7 @@ ${subtasks.map((s) => `- ${s.id}: ${s.title}`).join("\n")}`;
 
 export function parseEventPrompt(input: string): string {
   return `あなたはカレンダーアシスタントです。
-現在日時: ${nowJST()} (JST)
+${dateContext()}
 
 ユーザーの入力から予定情報を抽出してください。
 コードブロックや説明文は不要です。JSONのみ返してください。
@@ -123,7 +140,7 @@ ${input}
 
 export function autoParsePrompt(input: string): string {
   return `あなたはタスク・カレンダー管理アシスタントです。
-現在日時: ${nowJST()} (JST)
+${dateContext()}
 
 ユーザーの入力を分析し、それが「タスク（作業・やること）」なのか「予定（日時が決まった出来事）」なのかを判断して返してください。
 コードブロックや説明文は不要です。JSONのみ返してください。
@@ -207,7 +224,7 @@ export function breakdownChatPrompt(
   const shouldPropose = userTurns >= 2;
 
   return `あなたはタスク細分化アシスタントです。
-現在日時: ${nowJST()} (JST)
+${dateContext()}
 
 タスク情報:
 - タイトル: ${taskTitle}
@@ -256,9 +273,12 @@ export function autoChatPrompt(
   const shouldPropose = userTurns >= 3;
 
   return `あなたはタスク・カレンダー管理アシスタントです。
-現在日時: ${nowJST()} (JST)
+${dateContext()}
 
-ユーザーの最初の入力と会話履歴から、内容が「予定(event: 日時が決まった出来事)」か「タスク(task: 達成すべき作業)」かを判断し、登録に必要な情報を補うための対話を行います。
+ユーザーの入力には「予定(event: 日時が決まった出来事)」と「タスク(task: 達成すべき作業)」が混在することがあります。
+入力と会話履歴から、含まれる予定をすべて events に、タスクをすべて tasks に抽出します。
+例:「来週月曜14時から会議、それに向けて資料も作る」→ event(会議)とtask(資料作成)の両方を抽出する。
+種別が本当に曖昧で判断できない、または登録に必要な情報が不足している場合は、推測で確定せず質問してください。
 
 最初の入力: ${firstInput}
 
@@ -267,26 +287,25 @@ ${historyText}
 
 ${
   shouldPropose
-    ? `十分な情報が集まりました。判断した種別に応じて proposal を返してください。
-- 予定(event): タイトルと開始・終了日時を確定する。
-- タスク(task): タイトル・開始日・期日・推定作業時間を確定する。`
-    : `登録に必要な情報のうち、まだ不明なものを1つだけ質問してください。
+    ? `十分な情報が集まりました。入力に含まれる予定とタスクを漏れなく抽出して proposal を返してください。
+- 予定(event): タイトルと開始・終了日時。
+- タスク(task): タイトル・開始日・期日・推定作業時間。
+- estimatedHours は 0.25 以上の数値にし、0 や空にしないこと。
+- events と tasks はどちらか一方が空配列でもよいが、両方を空にはしないこと。`
+    : `登録に必要な情報のうち、まだ不明なものを1つだけ質問してください。種別が曖昧な場合は推測せず種別を確認する質問をしてください。
 ルール:
 - 質問は短く（25字以内）。
 - 原則は「選択肢で答えられる質問」にする（options に2〜4個、各12字以内）。
-- 選択肢では正確に表現できず、記述式の方が明らかに効率的で正確な場合（固有名詞・具体的な数値・自由な説明が必要なときなど）のみ、options を空配列 [] にして記述式の質問にする。
-- すでに分かっている内容や聞いた内容は繰り返さない。
+- 選択肢では正確に表現できず記述式が明らかに効率的な場合（固有名詞・具体的数値・自由記述が必要なとき）のみ、options を空配列 [] にする。
+- すでに分かっている/聞いた内容は繰り返さない。
 - 日時・期間・規模・成果物など登録に直結する情報を優先して聞く。`
 }
 
 必ずJSONのみで返してください（説明文・コードブロック不要）。
 ${
   shouldPropose
-    ? `予定の場合:
-{"type":"proposal","kind":"event","message":"確認用の一言","event":{"title":"...","start":"YYYY-MM-DDTHH:mm:ss+09:00","end":"YYYY-MM-DDTHH:mm:ss+09:00","description":"説明（任意）"}}
-タスクの場合:
-{"type":"proposal","kind":"task","message":"確認用の一言","tasks":[{"title":"...","description":"...","estimatedHours":数値,"startDate":"YYYY-MM-DDTHH:mm:ss+09:00","suggestedDeadline":"YYYY-MM-DDTHH:mm:ss+09:00"}]}
-時刻が不明な場合はその日の09:00〜10:00、終了時刻が不明な場合は開始の1時間後。開始日が不明な場合は今日にする。`
+    ? `{"type":"proposal","message":"確認用の一言","events":[{"title":"...","start":"YYYY-MM-DDTHH:mm:ss+09:00","end":"YYYY-MM-DDTHH:mm:ss+09:00","description":"説明（任意）"}],"tasks":[{"title":"...","description":"...","estimatedHours":数値,"startDate":"YYYY-MM-DDTHH:mm:ss+09:00","suggestedDeadline":"YYYY-MM-DDTHH:mm:ss+09:00"}]}
+時刻が不明な場合はその日の09:00〜10:00、終了時刻が不明な場合は開始の1時間後。開始日が不明な場合は今日。`
     : `選択肢の質問: {"type":"question","message":"質問文","options":["選択肢1","選択肢2"]}
 記述式の質問: {"type":"question","message":"質問文","options":[]}`
 }`;
@@ -309,7 +328,7 @@ export function dashboardCommentPrompt(
   );
 
   return `あなたはタスク管理アシスタントです。
-現在日時: ${nowJST()} (JST)
+${dateContext()}
 
 今日の状況から一言コメントを生成してください（1〜2文）。
 コードブロックは不要です。JSONのみ返してください。

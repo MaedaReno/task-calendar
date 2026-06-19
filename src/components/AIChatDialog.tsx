@@ -21,9 +21,10 @@ type ProposedTask = {
   startDate?: string;
   suggestedDeadline: string;
 };
-type Proposal =
-  | { kind: "event"; event: ProposedEvent }
-  | { kind: "task"; tasks: ProposedTask[] };
+type Proposal = {
+  events: ProposedEvent[];
+  tasks: ProposedTask[];
+};
 
 interface Props {
   initialInput: string;
@@ -78,11 +79,7 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
         setMessages((prev) => [...prev, { role: "ai", content: data.message }]);
         setCurrentOptions(null);
         setFreeText(false);
-        if (data.kind === "event") {
-          setProposal({ kind: "event", event: data.event });
-        } else {
-          setProposal({ kind: "task", tasks: data.tasks });
-        }
+        setProposal({ events: data.events ?? [], tasks: data.tasks ?? [] });
       }
     } catch {
       toast.error("AIとの通信に失敗しました");
@@ -169,13 +166,14 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
     if (!proposal) return;
     setSaving(true);
     try {
-      if (proposal.kind === "event") {
-        await approveEvent(proposal.event);
-        toast.success("予定を追加しました");
-      } else {
-        await approveTasks(proposal.tasks);
-        toast.success("タスクをスケジュールに追加しました");
+      for (const ev of proposal.events) {
+        await approveEvent(ev);
       }
+      if (proposal.tasks.length > 0) {
+        await approveTasks(proposal.tasks);
+      }
+      const n = proposal.events.length + proposal.tasks.length;
+      toast.success(`${n}件を登録しました`);
       onApproved();
     } catch {
       toast.error("追加に失敗しました");
@@ -238,30 +236,36 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
             </div>
           ))}
 
-          {/* Event proposal */}
-          {proposal?.kind === "event" && (
+          {/* Event proposals */}
+          {proposal && proposal.events.length > 0 && (
             <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--glass-border)" }}>
               <div className="px-3 py-2 flex items-center gap-1.5" style={{ background: "var(--accent-cyan-dim)", borderBottom: "1px solid var(--glass-border)" }}>
                 <CalendarDays className="w-3.5 h-3.5" style={{ color: "var(--accent-cyan)" }} />
-                <p className="text-xs font-medium" style={{ color: "var(--accent-cyan)" }}>予定の提案</p>
+                <p className="text-xs font-medium" style={{ color: "var(--accent-cyan)" }}>予定の提案（{proposal.events.length}件）</p>
               </div>
-              <div className="px-3 py-2.5 space-y-1">
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{proposal.event.title}</p>
-                <p className="text-xs flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
-                  <Clock className="w-3 h-3" />
-                  {format(new Date(proposal.event.start), "M月d日 (E) HH:mm", { locale: ja })}
-                  {" – "}
-                  {format(new Date(proposal.event.end), "HH:mm")}
-                </p>
-                {proposal.event.description && (
-                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{proposal.event.description}</p>
-                )}
-              </div>
+              {proposal.events.map((ev, i) => (
+                <div
+                  key={i}
+                  className="px-3 py-2.5 space-y-1"
+                  style={{ borderBottom: i < proposal.events.length - 1 ? "1px solid var(--glass-border)" : "none" }}
+                >
+                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{ev.title}</p>
+                  <p className="text-xs flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                    <Clock className="w-3 h-3" />
+                    {format(new Date(ev.start), "M月d日 (E) HH:mm", { locale: ja })}
+                    {" – "}
+                    {format(new Date(ev.end), "HH:mm")}
+                  </p>
+                  {ev.description && (
+                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>{ev.description}</p>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Task proposal */}
-          {proposal?.kind === "task" && (
+          {/* Task proposals */}
+          {proposal && proposal.tasks.length > 0 && (
             <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--glass-border)" }}>
               <div className="px-3 py-2 flex items-center gap-1.5" style={{ background: "var(--accent-violet-dim)", borderBottom: "1px solid var(--glass-border)" }}>
                 <ListTodo className="w-3.5 h-3.5" style={{ color: "var(--accent-violet)" }} />
@@ -320,7 +324,7 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
               disabled={saving}
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-              {proposal.kind === "event" ? "承認して予定に追加" : "承認してタスクに追加"}
+              承認して登録
             </button>
           </div>
         ) : (

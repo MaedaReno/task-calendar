@@ -12,9 +12,17 @@ const RequestSchema = z.object({
   ),
 });
 
-// 注: type:"proposal" が event/task の2バリアントで重複するため
-// z.discriminatedUnion("type", …) は使えない（Duplicate discriminator value で throw）。
-// z.union で question / proposal(event) / proposal(task) を検証する。
+// 見積り時間は 0/空/極小を避け 0.25h 以上にクランプする。
+const estimatedHoursClamp = z.coerce
+  .number()
+  .optional()
+  .transform((v) => {
+    const n = v && v > 0 ? v : 1;
+    return n < 0.25 ? 0.25 : n;
+  });
+
+// 入力には予定とタスクが混在しうるため、proposal は events[] と tasks[] の両方を持つ。
+// type:"proposal" は1バリアントなので z.union で問題なし。
 const ResponseSchema = z.union([
   z.object({
     type: z.literal("question"),
@@ -23,28 +31,28 @@ const ResponseSchema = z.union([
   }),
   z.object({
     type: z.literal("proposal"),
-    kind: z.literal("event"),
     message: z.string(),
-    event: z.object({
-      title: z.string(),
-      start: z.string(),
-      end: z.string(),
-      description: z.string().nullable().optional(),
-    }),
-  }),
-  z.object({
-    type: z.literal("proposal"),
-    kind: z.literal("task"),
-    message: z.string(),
-    tasks: z.array(
-      z.object({
-        title: z.string(),
-        description: z.string().nullable().optional().transform((v) => v ?? ""),
-        estimatedHours: z.coerce.number().optional().default(1),
-        startDate: z.string().optional(),
-        suggestedDeadline: z.string(),
-      })
-    ),
+    events: z
+      .array(
+        z.object({
+          title: z.string(),
+          start: z.string(),
+          end: z.string(),
+          description: z.string().nullable().optional(),
+        })
+      )
+      .default([]),
+    tasks: z
+      .array(
+        z.object({
+          title: z.string(),
+          description: z.string().nullable().optional().transform((v) => v ?? ""),
+          estimatedHours: estimatedHoursClamp,
+          startDate: z.string().optional(),
+          suggestedDeadline: z.string(),
+        })
+      )
+      .default([]),
   }),
 ]);
 
