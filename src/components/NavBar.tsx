@@ -24,7 +24,7 @@ export default function NavBar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 h-14">
         {/* Logo */}
-        <div className="flex items-center gap-2 mr-6">
+        <div className="flex items-center gap-2 mr-2 sm:mr-6 shrink-0">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center"
             style={{ background: "linear-gradient(135deg, var(--accent-cyan), var(--accent-violet))" }}
@@ -32,7 +32,7 @@ export default function NavBar() {
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
           <span
-            className="font-semibold text-sm tracking-tight"
+            className="hidden sm:inline font-semibold text-sm tracking-tight"
             style={{ background: "linear-gradient(90deg, var(--accent-cyan), var(--accent-violet))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
           >
             AI Calendar
@@ -46,7 +46,7 @@ export default function NavBar() {
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 whitespace-nowrap shrink-0"
               style={
                 isActive
                   ? {

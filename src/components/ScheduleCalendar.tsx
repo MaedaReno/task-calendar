@@ -73,6 +73,8 @@ export default function ScheduleCalendar() {
         }}
         buttonText={{ today: "今日", month: "月", week: "週", day: "日" }}
         events={calendarEvents}
+        dayMaxEvents={3}
+        moreLinkText={(n) => `+${n}件`}
         selectable
         editable
         select={(info) => {

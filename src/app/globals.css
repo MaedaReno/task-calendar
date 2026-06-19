@@ -107,7 +107,8 @@
   /* Text scale */
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
-  --text-muted: #4a5568;
+  /* WCAG AA(4.5:1) を満たすよう暗すぎる #4a5568 から引き上げ */
+  --text-muted: #7e8b9e;
 }
 
 @layer base {
@@ -121,6 +122,12 @@
   }
   html {
     @apply font-sans;
+  }
+  /* キーボード操作時のフォーカスを明示（アクセシビリティ） */
+  :focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
