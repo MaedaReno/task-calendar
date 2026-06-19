@@ -5,6 +5,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import luxon3Plugin from "@fullcalendar/luxon3";
 import { toast } from "sonner";
 import type { EventData } from "@/types";
 import EventModal from "./EventModal";
@@ -61,7 +62,7 @@ export default function ScheduleCalendar() {
     >
       <FullCalendar
         ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, luxon3Plugin]}
         initialView="dayGridMonth"
         timeZone="Asia/Tokyo"
         locale="ja"

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import luxon3Plugin from "@fullcalendar/luxon3";
 import { toast } from "sonner";
 import type { TaskData } from "@/types";
 import TaskModal from "./TaskModal";
@@ -83,7 +84,7 @@ export default function TaskCalendar() {
       }}
     >
       <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
+        plugins={[dayGridPlugin, interactionPlugin, luxon3Plugin]}
         initialView="dayGridMonth"
         timeZone="Asia/Tokyo"
         locale="ja"

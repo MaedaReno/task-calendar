@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import luxon3Plugin from "@fullcalendar/luxon3";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -224,7 +225,7 @@ export default function DayPlanner({ refresh, onSubtaskToggled }: Props) {
       <div className="flex-1 overflow-auto">
         <FullCalendar
           ref={calendarRef}
-          plugins={[timeGridPlugin, interactionPlugin]}
+          plugins={[timeGridPlugin, interactionPlugin, luxon3Plugin]}
           initialView="timeGridDay"
           initialDate={currentDate}
           timeZone="Asia/Tokyo"
