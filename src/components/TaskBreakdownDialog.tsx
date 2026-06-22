@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Loader2, Send, CheckCircle2, RotateCcw, X, Clock } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { TaskData } from "@/types";
 
 type Message = { role: "ai" | "user"; content: string };

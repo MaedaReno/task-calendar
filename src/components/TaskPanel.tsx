@@ -6,7 +6,7 @@ import {
   Clock, CalendarDays, ChevronRight, Pencil, Scissors, Trash2,
 } from "lucide-react";
 import TaskBreakdownDialog from "./TaskBreakdownDialog";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import type { TaskData } from "@/types";

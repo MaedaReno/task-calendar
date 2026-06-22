@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Loader2, Send, CheckCircle2, X, CalendarDays, ListTodo, Clock } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
@@ -81,8 +81,15 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
         setFreeText(false);
         setProposal({ events: data.events ?? [], tasks: data.tasks ?? [] });
       }
-    } catch {
-      toast.error("AIとの通信に失敗しました");
+    } catch (e) {
+      const code = e instanceof Error ? e.message : "";
+      const messages: Record<string, string> = {
+        ai_rate_limit: "AIが混雑しています。少し待ってから再試行してください",
+        ai_timeout: "AIの応答がタイムアウトしました。入力を短くして再試行してください",
+        ai_parse_error: "入力をうまく解釈できませんでした。言い換えて再試行してください",
+        ai_unknown: "AI処理でエラーが発生しました。再試行してください",
+      };
+      toast.error(messages[code] ?? "AIとの通信に失敗しました");
     } finally {
       setLoading(false);
     }

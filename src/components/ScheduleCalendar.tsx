@@ -6,7 +6,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import luxon3Plugin from "@fullcalendar/luxon3";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { EventData } from "@/types";
 import EventModal from "./EventModal";
 

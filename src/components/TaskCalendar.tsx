@@ -5,7 +5,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import luxon3Plugin from "@fullcalendar/luxon3";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { TaskData } from "@/types";
 import TaskModal from "./TaskModal";
 import { jstToUTC, utcToJSTDate, todayJST, addDays } from "@/lib/datetime";
