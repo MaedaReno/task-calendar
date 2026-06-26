@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ListTodo, LayoutDashboard, Settings, Zap } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const links = [
   { href: "/", label: "今日", icon: LayoutDashboard },
@@ -16,7 +17,7 @@ export default function NavBar() {
     <nav
       className="sticky top-0 z-50 border-b"
       style={{
-        background: "rgba(8, 12, 24, 0.85)",
+        background: "var(--nav-bg)",
         borderColor: "var(--glass-border)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
@@ -52,7 +53,7 @@ export default function NavBar() {
                   ? {
                       background: "var(--accent-cyan-dim)",
                       color: "var(--accent-cyan)",
-                      border: "1px solid rgba(56,189,248,0.2)",
+                      border: "1px solid var(--accent-cyan-glow)",
                     }
                   : {
                       color: "var(--text-muted)",
@@ -77,6 +78,9 @@ export default function NavBar() {
             </Link>
           );
         })}
+
+        {/* ライト/ダーク切り替え */}
+        <ThemeToggle />
       </div>
     </nav>
   );

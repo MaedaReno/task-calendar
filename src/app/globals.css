@@ -49,7 +49,75 @@
 }
 
 :root {
-  /* === Shadcn/UI semantic tokens — dark by default === */
+  /* === Shadcn/UI semantic tokens — LIGHT (白ベース・デフォルト) === */
+  --background: oklch(0.99 0.003 240);
+  --foreground: oklch(0.27 0.02 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.27 0.02 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.27 0.02 255);
+  --primary: oklch(0.58 0.14 235);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.008 255);
+  --secondary-foreground: oklch(0.30 0.02 255);
+  --muted: oklch(0.96 0.006 255);
+  --muted-foreground: oklch(0.50 0.02 255);
+  --accent: oklch(0.55 0.18 285);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.58 0.22 25);
+  --border: oklch(0 0 0 / 0.10);
+  --input: oklch(0 0 0 / 0.12);
+  --ring: oklch(0.58 0.14 235 / 0.45);
+  --chart-1: oklch(0.58 0.14 235);
+  --chart-2: oklch(0.55 0.18 285);
+  --chart-3: oklch(0.55 0.14 160);
+  --chart-4: oklch(0.60 0.15 52);
+  --chart-5: oklch(0.58 0.22 25);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.99 0.003 240);
+  --sidebar-foreground: oklch(0.27 0.02 255);
+  --sidebar-primary: oklch(0.58 0.14 235);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0.008 255);
+  --sidebar-accent-foreground: oklch(0.30 0.02 255);
+  --sidebar-border: oklch(0 0 0 / 0.10);
+  --sidebar-ring: oklch(0.58 0.14 235 / 0.45);
+
+  /* === Custom Design Tokens — LIGHT === */
+  --bg-base: #f5f7fb;
+  --bg-surface: #ffffff;
+
+  /* Glass surfaces (ライトでは暗色を薄く重ねる) */
+  --glass-bg: rgba(15, 23, 42, 0.025);
+  --glass-bg-hover: rgba(15, 23, 42, 0.05);
+  --glass-bg-active: rgba(15, 23, 42, 0.08);
+  --glass-border: rgba(15, 23, 42, 0.10);
+  --glass-border-hover: rgba(15, 23, 42, 0.16);
+
+  /* Accent colors (白地でも視認できるよう少し深める) */
+  --accent-cyan: #0ea5e9;
+  --accent-cyan-dim: rgba(14, 165, 233, 0.12);
+  --accent-cyan-glow: rgba(14, 165, 233, 0.22);
+  --accent-violet: #7c3aed;
+  --accent-violet-dim: rgba(124, 58, 237, 0.12);
+  --accent-violet-glow: rgba(124, 58, 237, 0.22);
+  --accent-emerald: #059669;
+  --accent-emerald-dim: rgba(5, 150, 105, 0.12);
+
+  /* Text scale */
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  /* Chrome (ナビ・スクロールバー・FullCalendar) */
+  --nav-bg: rgba(255, 255, 255, 0.85);
+  --fc-hover-bg: rgba(15, 23, 42, 0.03);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.18);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
+}
+
+.dark {
+  /* === Shadcn/UI semantic tokens — DARK === */
   --background: oklch(0.09 0.025 255);
   --foreground: oklch(0.93 0.008 240);
   --card: oklch(0.13 0.028 255);
@@ -73,7 +141,6 @@
   --chart-3: oklch(0.78 0.16 160);
   --chart-4: oklch(0.76 0.15 52);
   --chart-5: oklch(0.65 0.22 25);
-  --radius: 0.75rem;
   --sidebar: oklch(0.11 0.025 255);
   --sidebar-foreground: oklch(0.93 0.008 240);
   --sidebar-primary: oklch(0.74 0.15 208);
@@ -83,18 +150,16 @@
   --sidebar-border: oklch(1 0 0 / 0.08);
   --sidebar-ring: oklch(0.74 0.15 208 / 0.45);
 
-  /* === Custom Design Tokens === */
+  /* === Custom Design Tokens — DARK === */
   --bg-base: #080c18;
   --bg-surface: #0c1222;
 
-  /* Glass surfaces */
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-bg-hover: rgba(255, 255, 255, 0.07);
   --glass-bg-active: rgba(255, 255, 255, 0.10);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-hover: rgba(255, 255, 255, 0.14);
 
-  /* Accent colors */
   --accent-cyan: #38bdf8;
   --accent-cyan-dim: rgba(56, 189, 248, 0.15);
   --accent-cyan-glow: rgba(56, 189, 248, 0.25);
@@ -104,11 +169,15 @@
   --accent-emerald: #34d399;
   --accent-emerald-dim: rgba(52, 211, 153, 0.15);
 
-  /* Text scale */
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
   /* WCAG AA(4.5:1) を満たすよう暗すぎる #4a5568 から引き上げ */
   --text-muted: #7e8b9e;
+
+  --nav-bg: rgba(8, 12, 24, 0.85);
+  --fc-hover-bg: rgba(255, 255, 255, 0.02);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
 }
 
 @layer base {
@@ -145,13 +214,13 @@
   --fc-button-active-border-color: rgba(56, 189, 248, 0.4);
   --fc-button-text-color: var(--text-secondary);
   --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: rgba(255, 255, 255, 0.02);
+  --fc-neutral-bg-color: var(--glass-bg);
   --fc-neutral-text-color: var(--text-secondary);
-  --fc-today-bg-color: rgba(56, 189, 248, 0.06);
-  --fc-non-business-color: rgba(0, 0, 0, 0.2);
-  --fc-highlight-color: rgba(56, 189, 248, 0.1);
+  --fc-today-bg-color: var(--accent-cyan-dim);
+  --fc-non-business-color: rgba(0, 0, 0, 0.04);
+  --fc-highlight-color: var(--accent-cyan-glow);
   --fc-event-border-color: transparent;
-  --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.04);
+  --fc-list-event-hover-bg-color: var(--glass-bg-hover);
 }
 
 .fc .fc-toolbar-title {
@@ -162,7 +231,7 @@
 }
 
 .fc .fc-col-header-cell {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--glass-bg);
   border-color: var(--glass-border) !important;
 }
 
@@ -181,7 +250,7 @@
 }
 
 .fc .fc-daygrid-day:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--fc-hover-bg);
 }
 
 .fc .fc-daygrid-day-number {
@@ -287,11 +356,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--scrollbar-thumb);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* ===================================================
