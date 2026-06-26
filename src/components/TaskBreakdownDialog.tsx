@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, Send, CheckCircle2, RotateCcw, X, Clock } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { TaskData } from "@/types";
@@ -25,6 +26,9 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const startedRef = useRef(false);
+  // ポータル先(document.body)はクライアントでのみ参照できる
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!startedRef.current) {
@@ -112,6 +116,26 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
     }
   }
 
+  // 提案されたサブタスクの目安時間をユーザーが調整できるようにする
+  function updateHours(index: number, raw: string) {
+    setProposedSubtasks((prev) => {
+      if (!prev) return prev;
+      const next = [...prev];
+      const parsed = parseFloat(raw);
+      // 入力途中(空・不正)は 0 として保持し、承認時に弾く
+      next[index] = {
+        ...next[index],
+        estimatedHours: Number.isFinite(parsed) && parsed >= 0 ? parsed : 0,
+      };
+      return next;
+    });
+  }
+
+  const totalHours = proposedSubtasks
+    ? Math.round(proposedSubtasks.reduce((sum, s) => sum + (s.estimatedHours || 0), 0) * 10) / 10
+    : 0;
+  const hasInvalidHours = proposedSubtasks?.some((s) => !(s.estimatedHours > 0)) ?? false;
+
   function retry() {
     setMessages([]);
     setProposedSubtasks(null);
@@ -123,7 +147,9 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
     }, 0);
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
@@ -192,7 +218,7 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
               style={{ border: "1px solid var(--glass-border)" }}
             >
               <div
-                className="px-3 py-2"
+                className="px-3 py-2 flex items-center justify-between gap-2"
                 style={{
                   background: "var(--accent-cyan-dim)",
                   borderBottom: "1px solid var(--glass-border)",
@@ -201,7 +227,20 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
                 <p className="text-xs font-medium" style={{ color: "var(--accent-cyan)" }}>
                   細分化の提案（{proposedSubtasks.length}件）
                 </p>
+                <span
+                  className="text-xs flex items-center gap-1 shrink-0"
+                  style={{ color: "var(--accent-cyan)" }}
+                >
+                  <Clock className="w-3 h-3" />
+                  合計 {totalHours}h
+                </span>
               </div>
+              <p
+                className="px-3 pt-2 text-xs"
+                style={{ color: "var(--text-muted)" }}
+              >
+                各サブタスクの目安時間を調整できます
+              </p>
               {proposedSubtasks.map((s, i) => (
                 <div
                   key={i}
@@ -228,13 +267,27 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
                   >
                     {s.title}
                   </span>
-                  <span
-                    className="text-xs flex items-center gap-1 shrink-0"
-                    style={{ color: "var(--text-muted)" }}
+                  <div
+                    className="flex items-center gap-1 shrink-0 rounded-lg px-2 py-1"
+                    style={{
+                      background: "var(--glass-bg-hover)",
+                      border: `1px solid ${s.estimatedHours > 0 ? "var(--glass-border)" : "var(--destructive)"}`,
+                    }}
                   >
-                    <Clock className="w-3 h-3" />
-                    {s.estimatedHours}h
-                  </span>
+                    <Clock className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                    <input
+                      type="number"
+                      min={0.5}
+                      step={0.5}
+                      value={s.estimatedHours}
+                      onChange={(e) => updateHours(i, e.target.value)}
+                      disabled={saving}
+                      aria-label={`${s.title} の目安時間`}
+                      className="w-12 bg-transparent text-xs text-right outline-none disabled:opacity-40"
+                      style={{ color: "var(--text-primary)" }}
+                    />
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>h</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -289,7 +342,8 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
                 border: "1px solid rgba(56,189,248,0.3)",
               }}
               onClick={approve}
-              disabled={saving}
+              disabled={saving || hasInvalidHours}
+              title={hasInvalidHours ? "目安時間は0より大きい値にしてください" : undefined}
             >
               {saving ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -361,6 +415,7 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

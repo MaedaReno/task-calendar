@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, Send, CheckCircle2, X, CalendarDays, ListTodo, Clock } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { format } from "date-fns";
@@ -45,6 +46,9 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const startedRef = useRef(false);
+  // ポータル先(document.body)はクライアントでのみ参照できる
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!startedRef.current) {
@@ -189,7 +193,9 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
     }
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
@@ -379,6 +385,7 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
