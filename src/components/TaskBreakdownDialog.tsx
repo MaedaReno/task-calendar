@@ -152,13 +152,14 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+      style={{ background: "var(--modal-overlay)", backdropFilter: "blur(4px)" }}
     >
       <div
         className="relative w-full max-w-lg mx-4 rounded-2xl flex flex-col"
         style={{
-          background: "var(--glass-bg)",
+          background: "var(--surface-modal)",
           border: "1px solid var(--glass-border)",
+          boxShadow: "var(--modal-shadow)",
           maxHeight: "82vh",
         }}
       >
@@ -195,14 +196,14 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
                 style={
                   msg.role === "ai"
                     ? {
-                        background: "var(--glass-bg-hover)",
+                        background: "var(--surface-modal-subtle)",
                         color: "var(--text-primary)",
                         border: "1px solid var(--glass-border)",
                       }
                     : {
                         background: "var(--accent-violet-dim)",
                         color: "var(--accent-violet)",
-                        border: "1px solid rgba(167,139,250,0.3)",
+                        border: "1px solid var(--accent-violet-glow)",
                       }
                 }
               >
@@ -298,7 +299,7 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
               <div
                 className="rounded-2xl px-3 py-2 flex items-center gap-2"
                 style={{
-                  background: "var(--glass-bg-hover)",
+                  background: "var(--surface-modal-subtle)",
                   border: "1px solid var(--glass-border)",
                 }}
               >
@@ -339,7 +340,7 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
               style={{
                 background: "var(--accent-cyan-dim)",
                 color: "var(--accent-cyan)",
-                border: "1px solid rgba(56,189,248,0.3)",
+                border: "1px solid var(--accent-cyan-glow)",
               }}
               onClick={approve}
               disabled={saving || hasInvalidHours}
@@ -368,7 +369,7 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
                     style={{
                       background: "var(--accent-violet-dim)",
                       color: "var(--accent-violet)",
-                      border: "1px solid rgba(167,139,250,0.3)",
+                      border: "1px solid var(--accent-violet-glow)",
                     }}
                     disabled={loading}
                     onClick={() => sendMessage(opt)}
@@ -404,7 +405,7 @@ export default function TaskBreakdownDialog({ task, onClose, onApproved }: Props
                 style={{
                   background: "var(--accent-violet-dim)",
                   color: "var(--accent-violet)",
-                  border: "1px solid rgba(167,139,250,0.3)",
+                  border: "1px solid var(--accent-violet-glow)",
                 }}
                 onClick={() => sendMessage()}
                 disabled={loading || !input.trim()}

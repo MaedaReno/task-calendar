@@ -198,13 +198,14 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+      style={{ background: "var(--modal-overlay)", backdropFilter: "blur(4px)" }}
     >
       <div
         className="relative w-full max-w-lg mx-4 rounded-2xl flex flex-col"
         style={{
-          background: "var(--glass-bg)",
+          background: "var(--surface-modal)",
           border: "1px solid var(--glass-border)",
+          boxShadow: "var(--modal-shadow)",
           maxHeight: "82vh",
         }}
       >
@@ -240,8 +241,8 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
                 className="max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed"
                 style={
                   msg.role === "ai"
-                    ? { background: "var(--glass-bg-hover)", color: "var(--text-primary)", border: "1px solid var(--glass-border)" }
-                    : { background: "var(--accent-violet-dim)", color: "var(--accent-violet)", border: "1px solid rgba(167,139,250,0.3)" }
+                    ? { background: "var(--surface-modal-subtle)", color: "var(--text-primary)", border: "1px solid var(--glass-border)" }
+                    : { background: "var(--accent-violet-dim)", color: "var(--accent-violet)", border: "1px solid var(--accent-violet-glow)" }
                 }
               >
                 {msg.content}
@@ -310,7 +311,7 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
 
           {loading && (
             <div className="flex justify-start">
-              <div className="rounded-2xl px-3 py-2 flex items-center gap-2" style={{ background: "var(--glass-bg-hover)", border: "1px solid var(--glass-border)" }}>
+              <div className="rounded-2xl px-3 py-2 flex items-center gap-2" style={{ background: "var(--surface-modal-subtle)", border: "1px solid var(--glass-border)" }}>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--text-muted)" }} />
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>考え中…</span>
               </div>
@@ -332,7 +333,7 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
             </button>
             <button
               className="flex-1 flex items-center justify-center gap-1.5 text-xs px-3 py-2 rounded-xl transition-all disabled:opacity-40"
-              style={{ background: "var(--accent-cyan-dim)", color: "var(--accent-cyan)", border: "1px solid rgba(56,189,248,0.3)" }}
+              style={{ background: "var(--accent-cyan-dim)", color: "var(--accent-cyan)", border: "1px solid var(--accent-cyan-glow)" }}
               onClick={approve}
               disabled={saving}
             >
@@ -348,7 +349,7 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
                   <button
                     key={i}
                     className="text-xs px-3 py-1.5 rounded-xl transition-all disabled:opacity-40"
-                    style={{ background: "var(--accent-violet-dim)", color: "var(--accent-violet)", border: "1px solid rgba(167,139,250,0.3)" }}
+                    style={{ background: "var(--accent-violet-dim)", color: "var(--accent-violet)", border: "1px solid var(--accent-violet-glow)" }}
                     disabled={loading}
                     onClick={() => sendMessage(opt)}
                   >
@@ -361,7 +362,7 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
               <input
                 ref={inputRef}
                 className="flex-1 text-sm px-3 py-2 rounded-xl outline-none"
-                style={{ background: "var(--glass-bg-hover)", color: "var(--text-primary)", border: "1px solid var(--glass-border)" }}
+                style={{ background: "var(--surface-modal-subtle)", color: "var(--text-primary)", border: "1px solid var(--glass-border)" }}
                 placeholder={freeText ? "回答を入力…" : currentOptions ? "または自由に入力…" : "返答を入力…"}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -375,7 +376,7 @@ export default function AIChatDialog({ initialInput, onClose, onApproved }: Prop
               />
               <button
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
-                style={{ background: "var(--accent-violet-dim)", color: "var(--accent-violet)", border: "1px solid rgba(167,139,250,0.3)" }}
+                style={{ background: "var(--accent-violet-dim)", color: "var(--accent-violet)", border: "1px solid var(--accent-violet-glow)" }}
                 onClick={() => sendMessage()}
                 disabled={loading || !input.trim()}
               >
