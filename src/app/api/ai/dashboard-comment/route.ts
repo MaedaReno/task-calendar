@@ -6,13 +6,15 @@ import { getModel } from "@/lib/gemini";
 import { dashboardCommentPrompt } from "@/lib/ai-prompts";
 import { handleAIError, withRetry, withTimeout, AIError } from "@/lib/ai-error";
 import { prisma } from "@/lib/prisma";
+import { getWorkspaceId } from "@/lib/workspace";
 import { todayJST, jstToUTC, addDays } from "@/lib/datetime";
 import type { EventData, SubTaskData } from "@/types";
 
 const ResponseSchema = z.object({ comment: z.string() });
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
+    const workspaceId = getWorkspaceId(req);
     // JST 固定運用。ローカルTZ依存の setHours ではなく lib/datetime のJST境界を使う。
     const today = todayJST();
     const todayStart = new Date(jstToUTC(today, "00:00"));
@@ -22,17 +24,18 @@ export async function GET(_req: NextRequest) {
 
     const [events, subtasks, settings] = await Promise.all([
       prisma.event.findMany({
-        where: { start: { gte: todayStart }, end: { lte: todayEnd } },
+        where: { workspaceId, start: { gte: todayStart }, end: { lte: todayEnd } },
       }),
       prisma.subTask.findMany({
         where: {
+          task: { workspaceId },
           scheduledStart: { gte: todayStart, lte: todayEnd },
           status: { not: "done" },
         },
       }),
       prisma.userSettings.upsert({
-        where: { id: "singleton" },
-        create: { id: "singleton" },
+        where: { workspaceId },
+        create: { workspaceId },
         update: {},
       }),
     ]);

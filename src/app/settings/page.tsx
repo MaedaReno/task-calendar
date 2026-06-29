@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
-import { Loader2, Clock, LayoutTemplate, Trash2, Plus, AlertTriangle } from "lucide-react";
+import { Loader2, Clock, LayoutTemplate, Trash2, Plus, AlertTriangle, Users } from "lucide-react";
 import type { UserSettingsData, TaskTemplateData, SubtaskTemplate } from "@/types";
+import {
+  getWorkspaceId,
+  setWorkspaceIdAndReload,
+  DEFAULT_WORKSPACE,
+} from "@/lib/workspace-client";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettingsData | null>(null);
@@ -20,6 +25,16 @@ export default function SettingsPage() {
   const [tmplTitle, setTmplTitle] = useState("");
   const [tmplHours, setTmplHours] = useState("");
   const [tmplSubtasks, setTmplSubtasks] = useState("");
+
+  // ワークスペース（データ分離キー）
+  const [currentWs, setCurrentWs] = useState(DEFAULT_WORKSPACE);
+  const [wsInput, setWsInput] = useState(DEFAULT_WORKSPACE);
+
+  useEffect(() => {
+    const ws = getWorkspaceId();
+    setCurrentWs(ws);
+    setWsInput(ws);
+  }, []);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -95,6 +110,65 @@ export default function SettingsPage() {
           Settings
         </p>
         <h1 className="text-2xl font-light" style={{ color: "var(--text-primary)" }}>設定</h1>
+      </div>
+
+      {/* Workspace（データ分離） */}
+      <div
+        className="rounded-2xl p-5 space-y-4"
+        style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "var(--accent-violet-dim)", border: "1px solid var(--accent-violet-glow)" }}
+          >
+            <Users className="w-4 h-4" style={{ color: "var(--accent-violet)" }} />
+          </div>
+          <h2 className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>ワークスペース</h2>
+        </div>
+
+        <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          予定・タスク・設定は<strong style={{ color: "var(--text-secondary)" }}>ワークスペースキー</strong>ごとに分けて保存されます。
+          自分専用のキーを設定すると他の人とデータが混ざりません。同じキーを共有すれば共同で利用できます。
+          （パスワードによる保護はありません）
+        </p>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>
+            現在のワークスペース: <span style={{ color: "var(--accent-violet)" }}>{currentWs}</span>
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              value={wsInput}
+              onChange={(e) => setWsInput(e.target.value)}
+              placeholder="例: tanaka-2026"
+              style={inputStyle}
+              maxLength={64}
+            />
+            <button
+              onClick={() => {
+                const next = wsInput.trim() || DEFAULT_WORKSPACE;
+                if (next === currentWs) {
+                  toast.info("同じワークスペースです");
+                  return;
+                }
+                // cookie/localStorage を更新してリロード（全データを切替後で再取得）
+                setWorkspaceIdAndReload(next);
+              }}
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all shrink-0 whitespace-nowrap"
+              style={{
+                background: "var(--accent-violet-dim)",
+                color: "var(--accent-violet)",
+                border: "1px solid var(--accent-violet-glow)",
+              }}
+            >
+              切り替え
+            </button>
+          </div>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            「default」は従来の共有データです。切り替えると画面が再読み込みされます。
+          </p>
+        </div>
       </div>
 
       {/* Work hours */}

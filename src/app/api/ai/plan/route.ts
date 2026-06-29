@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getWorkspaceId } from "@/lib/workspace";
 import { schedule, type BusyBlock, type SchedulerTaskInput } from "@/lib/scheduler";
 import type { PlanResponse, Priority } from "@/types";
 
@@ -12,23 +13,26 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "taskId is required" }, { status: 400 });
     }
 
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
+    const workspaceId = getWorkspaceId(req);
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, workspaceId },
       include: { subtasks: { orderBy: { order: "asc" } } },
     });
     if (!task) return Response.json({ error: "Task not found" }, { status: 404 });
 
     const settings = await prisma.userSettings.upsert({
-      where: { id: "singleton" },
-      create: { id: "singleton" },
+      where: { workspaceId },
+      create: { workspaceId },
       update: {},
     });
 
     // 探索範囲に「部分的にでも重なる」既存予定を取得する(区間重複の正しい判定)。
+    // 自ワークスペースの予定だけを busy として扱う。
     const now = new Date();
     const rangeStart = task.startDate && task.startDate > now ? task.startDate : now;
     const events = await prisma.event.findMany({
       where: {
+        workspaceId,
         start: { lt: task.deadline },
         end: { gt: rangeStart },
       },

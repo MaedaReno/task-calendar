@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getWorkspaceId } from "@/lib/workspace";
 import { z } from "zod";
 
 const UpdateSchema = z.object({
@@ -14,12 +15,12 @@ const UpdateSchema = z.object({
 });
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: RouteContext<"/api/tasks/[id]">
 ) {
   const { id } = await ctx.params;
-  const task = await prisma.task.findUnique({
-    where: { id },
+  const task = await prisma.task.findFirst({
+    where: { id, workspaceId: getWorkspaceId(req) },
     include: { subtasks: { orderBy: { order: "asc" } } },
   });
   if (!task) return Response.json({ error: "Not found" }, { status: 404 });
@@ -37,6 +38,12 @@ export async function PUT(
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
   const { deadline, startDate, ...rest } = parsed.data;
+  // 自ワークスペースのタスクのみ更新を許可
+  const owned = await prisma.task.findFirst({
+    where: { id, workspaceId: getWorkspaceId(req) },
+    select: { id: true },
+  });
+  if (!owned) return Response.json({ error: "Not found" }, { status: 404 });
   const task = await prisma.task.update({
     where: { id },
     data: {
@@ -52,10 +59,14 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: RouteContext<"/api/tasks/[id]">
 ) {
   const { id } = await ctx.params;
-  await prisma.task.delete({ where: { id } });
+  // 自ワークスペースのタスクのみ削除（subtask は onDelete: Cascade で連動）
+  const res = await prisma.task.deleteMany({
+    where: { id, workspaceId: getWorkspaceId(req) },
+  });
+  if (res.count === 0) return Response.json({ error: "Not found" }, { status: 404 });
   return new Response(null, { status: 204 });
 }

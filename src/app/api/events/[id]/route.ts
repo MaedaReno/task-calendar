@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getWorkspaceId } from "@/lib/workspace";
 import { z } from "zod";
 
 const UpdateSchema = z.object({
@@ -23,6 +24,12 @@ export async function PUT(
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
   const { start, end, ...rest } = parsed.data;
+  // 自ワークスペースの予定のみ更新を許可
+  const owned = await prisma.event.findFirst({
+    where: { id, workspaceId: getWorkspaceId(req) },
+    select: { id: true },
+  });
+  if (!owned) return Response.json({ error: "Not found" }, { status: 404 });
   const event = await prisma.event.update({
     where: { id },
     data: {
@@ -35,10 +42,14 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: RouteContext<"/api/events/[id]">
 ) {
   const { id } = await ctx.params;
-  await prisma.event.delete({ where: { id } });
+  // 自ワークスペースの予定のみ削除（他人のデータは消せない）
+  const res = await prisma.event.deleteMany({
+    where: { id, workspaceId: getWorkspaceId(req) },
+  });
+  if (res.count === 0) return Response.json({ error: "Not found" }, { status: 404 });
   return new Response(null, { status: 204 });
 }

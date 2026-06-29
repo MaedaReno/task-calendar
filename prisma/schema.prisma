@@ -12,6 +12,7 @@ datasource db {
 
 model Event {
   id          String   @id @default(cuid())
+  workspaceId String   @default("default")
   title       String
   description String?
   start       DateTime
@@ -21,10 +22,13 @@ model Event {
   location    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
 }
 
 model Task {
   id             String    @id @default(cuid())
+  workspaceId    String    @default("default")
   title          String
   description    String?
   startDate      DateTime?
@@ -37,6 +41,8 @@ model Task {
   subtasks       SubTask[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@index([workspaceId])
 }
 
 model SubTask {
@@ -54,7 +60,8 @@ model SubTask {
 }
 
 model UserSettings {
-  id            String   @id @default("singleton")
+  id            String   @id @default(cuid())
+  workspaceId   String   @unique @default("default")
   workStartHour Int      @default(9)
   workEndHour   Int      @default(21)
   timezone      String   @default("Asia/Tokyo")
@@ -64,10 +71,13 @@ model UserSettings {
 
 model TaskTemplate {
   id              String   @id @default(cuid())
+  workspaceId     String   @default("default")
   title           String
   description     String?
   estimatedHours  Float?
   defaultSubtasks String   @default("[]")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([workspaceId])
 }

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getWorkspaceId } from "@/lib/workspace";
 import { z } from "zod";
 
 const SettingsSchema = z.object({
@@ -8,10 +9,11 @@ const SettingsSchema = z.object({
   timezone: z.string().optional(),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const workspaceId = getWorkspaceId(req);
   const settings = await prisma.userSettings.upsert({
-    where: { id: "singleton" },
-    create: { id: "singleton" },
+    where: { workspaceId },
+    create: { workspaceId },
     update: {},
   });
   return Response.json(settings);
@@ -23,9 +25,10 @@ export async function PUT(req: NextRequest) {
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
+  const workspaceId = getWorkspaceId(req);
   const settings = await prisma.userSettings.upsert({
-    where: { id: "singleton" },
-    create: { id: "singleton", ...parsed.data },
+    where: { workspaceId },
+    create: { workspaceId, ...parsed.data },
     update: parsed.data,
   });
   return Response.json(settings);

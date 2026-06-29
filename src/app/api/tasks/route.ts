@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getWorkspaceId } from "@/lib/workspace";
 import { z } from "zod";
 
 const TaskSchema = z.object({
@@ -14,8 +15,9 @@ const TaskSchema = z.object({
   templateId: z.string().optional(),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const tasks = await prisma.task.findMany({
+    where: { workspaceId: getWorkspaceId(req) },
     include: { subtasks: { orderBy: { order: "asc" } } },
     orderBy: { deadline: "asc" },
   });
@@ -32,6 +34,7 @@ export async function POST(req: NextRequest) {
   const task = await prisma.task.create({
     data: {
       ...taskRest,
+      workspaceId: getWorkspaceId(req),
       deadline: new Date(parsed.data.deadline),
       ...(startDate ? { startDate: new Date(startDate) } : {}),
     },
