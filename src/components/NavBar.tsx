@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ListTodo, LayoutDashboard, Settings, Zap } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
+import AuthButton from "@/components/AuthButton";
 
 const links = [
   { href: "/", label: "今日", icon: LayoutDashboard },
@@ -81,6 +82,9 @@ export default function NavBar() {
 
         {/* ライト/ダーク切り替え */}
         <ThemeToggle />
+
+        {/* ログイン/ログアウト */}
+        <AuthButton />
       </div>
     </nav>
   );

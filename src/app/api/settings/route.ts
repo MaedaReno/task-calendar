@@ -10,7 +10,7 @@ const SettingsSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const workspaceId = getWorkspaceId(req);
+  const workspaceId = await getWorkspaceId(req);
   const settings = await prisma.userSettings.upsert({
     where: { workspaceId },
     create: { workspaceId },
@@ -25,7 +25,7 @@ export async function PUT(req: NextRequest) {
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const workspaceId = getWorkspaceId(req);
+  const workspaceId = await getWorkspaceId(req);
   const settings = await prisma.userSettings.upsert({
     where: { workspaceId },
     create: { workspaceId, ...parsed.data },

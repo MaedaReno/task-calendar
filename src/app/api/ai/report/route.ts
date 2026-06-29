@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const tasks = await prisma.task.findMany({
       where: {
-        workspaceId: getWorkspaceId(req),
+        workspaceId: await getWorkspaceId(req),
         ...(from && to
           ? {
               createdAt: {

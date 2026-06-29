@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
   // 親タスクが自ワークスペースのものか検証（他人のタスクにサブタスクを足せない）
   const parent = await prisma.task.findFirst({
-    where: { id: parsed.data.taskId, workspaceId: getWorkspaceId(req) },
+    where: { id: parsed.data.taskId, workspaceId: await getWorkspaceId(req) },
     select: { id: true },
   });
   if (!parent) return Response.json({ error: "Task not found" }, { status: 404 });

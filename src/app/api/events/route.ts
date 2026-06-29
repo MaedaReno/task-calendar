@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const events = await prisma.event.findMany({
     where: {
-      workspaceId: getWorkspaceId(req),
+      workspaceId: await getWorkspaceId(req),
       ...(from && to
         ? { start: { gte: new Date(from) }, end: { lte: new Date(to) } }
         : {}),
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   const event = await prisma.event.create({
     data: {
       ...parsed.data,
-      workspaceId: getWorkspaceId(req),
+      workspaceId: await getWorkspaceId(req),
       start: new Date(parsed.data.start),
       end: new Date(parsed.data.end),
     },

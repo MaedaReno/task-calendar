@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "taskId is required" }, { status: 400 });
     }
 
-    const workspaceId = getWorkspaceId(req);
+    const workspaceId = await getWorkspaceId(req);
     const task = await prisma.task.findFirst({
       where: { id: taskId, workspaceId },
       include: { subtasks: { orderBy: { order: "asc" } } },

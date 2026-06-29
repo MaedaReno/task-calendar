@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getWorkspaceId } from "@/lib/workspace";
 
 export async function DELETE(req: NextRequest) {
-  const workspaceId = getWorkspaceId(req);
+  const workspaceId = await getWorkspaceId(req);
   // 自ワークスペースのデータのみ削除する（SubTask は親Task経由で限定）
   await prisma.subTask.deleteMany({ where: { task: { workspaceId } } });
   await prisma.task.deleteMany({ where: { workspaceId } });

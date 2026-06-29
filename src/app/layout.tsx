@@ -5,6 +5,7 @@ import { Toaster } from "@/lib/toast";
 import NavBar from "@/components/NavBar";
 import ThemeProvider from "@/components/ThemeProvider";
 import WorkspaceInit from "@/components/WorkspaceInit";
+import AuthSessionProvider from "@/components/SessionProvider";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 
@@ -22,10 +23,12 @@ export default function RootLayout({
     <html lang="ja" className={`${geist.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col antialiased">
         <ThemeProvider>
-          <WorkspaceInit />
-          <NavBar />
-          <main className="flex-1">{children}</main>
-          <Toaster />
+          <AuthSessionProvider>
+            <WorkspaceInit />
+            <NavBar />
+            <main className="flex-1">{children}</main>
+            <Toaster />
+          </AuthSessionProvider>
         </ThemeProvider>
       </body>
     </html>

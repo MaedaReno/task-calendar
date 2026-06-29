@@ -20,7 +20,7 @@ export async function GET(
 ) {
   const { id } = await ctx.params;
   const task = await prisma.task.findFirst({
-    where: { id, workspaceId: getWorkspaceId(req) },
+    where: { id, workspaceId: await getWorkspaceId(req) },
     include: { subtasks: { orderBy: { order: "asc" } } },
   });
   if (!task) return Response.json({ error: "Not found" }, { status: 404 });
@@ -40,7 +40,7 @@ export async function PUT(
   const { deadline, startDate, ...rest } = parsed.data;
   // 自ワークスペースのタスクのみ更新を許可
   const owned = await prisma.task.findFirst({
-    where: { id, workspaceId: getWorkspaceId(req) },
+    where: { id, workspaceId: await getWorkspaceId(req) },
     select: { id: true },
   });
   if (!owned) return Response.json({ error: "Not found" }, { status: 404 });
@@ -65,7 +65,7 @@ export async function DELETE(
   const { id } = await ctx.params;
   // 自ワークスペースのタスクのみ削除（subtask は onDelete: Cascade で連動）
   const res = await prisma.task.deleteMany({
-    where: { id, workspaceId: getWorkspaceId(req) },
+    where: { id, workspaceId: await getWorkspaceId(req) },
   });
   if (res.count === 0) return Response.json({ error: "Not found" }, { status: 404 });
   return new Response(null, { status: 204 });

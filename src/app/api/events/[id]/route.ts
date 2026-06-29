@@ -26,7 +26,7 @@ export async function PUT(
   const { start, end, ...rest } = parsed.data;
   // 自ワークスペースの予定のみ更新を許可
   const owned = await prisma.event.findFirst({
-    where: { id, workspaceId: getWorkspaceId(req) },
+    where: { id, workspaceId: await getWorkspaceId(req) },
     select: { id: true },
   });
   if (!owned) return Response.json({ error: "Not found" }, { status: 404 });
@@ -48,7 +48,7 @@ export async function DELETE(
   const { id } = await ctx.params;
   // 自ワークスペースの予定のみ削除（他人のデータは消せない）
   const res = await prisma.event.deleteMany({
-    where: { id, workspaceId: getWorkspaceId(req) },
+    where: { id, workspaceId: await getWorkspaceId(req) },
   });
   if (res.count === 0) return Response.json({ error: "Not found" }, { status: 404 });
   return new Response(null, { status: 204 });

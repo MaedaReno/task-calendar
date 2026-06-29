@@ -8,7 +8,7 @@ export async function DELETE(
 ) {
   const { id } = await ctx.params;
   const res = await prisma.taskTemplate.deleteMany({
-    where: { id, workspaceId: getWorkspaceId(req) },
+    where: { id, workspaceId: await getWorkspaceId(req) },
   });
   if (res.count === 0) return Response.json({ error: "Not found" }, { status: 404 });
   return new Response(null, { status: 204 });

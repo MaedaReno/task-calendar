@@ -24,7 +24,7 @@ export async function PUT(
   }
   // 親タスク経由で自ワークスペースのサブタスクか検証
   const owned = await prisma.subTask.findFirst({
-    where: { id, task: { workspaceId: getWorkspaceId(req) } },
+    where: { id, task: { workspaceId: await getWorkspaceId(req) } },
     select: { id: true },
   });
   if (!owned) return Response.json({ error: "Not found" }, { status: 404 });
@@ -51,7 +51,7 @@ export async function DELETE(
   const { id } = await ctx.params;
   // 親タスク経由で自ワークスペースのサブタスクのみ削除
   const owned = await prisma.subTask.findFirst({
-    where: { id, task: { workspaceId: getWorkspaceId(req) } },
+    where: { id, task: { workspaceId: await getWorkspaceId(req) } },
     select: { id: true },
   });
   if (!owned) return Response.json({ error: "Not found" }, { status: 404 });

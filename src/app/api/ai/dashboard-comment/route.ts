@@ -14,7 +14,7 @@ const ResponseSchema = z.object({ comment: z.string() });
 
 export async function GET(req: NextRequest) {
   try {
-    const workspaceId = getWorkspaceId(req);
+    const workspaceId = await getWorkspaceId(req);
     // JST 固定運用。ローカルTZ依存の setHours ではなく lib/datetime のJST境界を使う。
     const today = todayJST();
     const todayStart = new Date(jstToUTC(today, "00:00"));

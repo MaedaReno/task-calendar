@@ -17,7 +17,7 @@ const TemplateSchema = z.object({
 
 export async function GET(req: NextRequest) {
   const templates = await prisma.taskTemplate.findMany({
-    where: { workspaceId: getWorkspaceId(req) },
+    where: { workspaceId: await getWorkspaceId(req) },
     orderBy: { createdAt: "desc" },
   });
   return Response.json(
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   const template = await prisma.taskTemplate.create({
     data: {
       ...parsed.data,
-      workspaceId: getWorkspaceId(req),
+      workspaceId: await getWorkspaceId(req),
       defaultSubtasks: JSON.stringify(parsed.data.defaultSubtasks),
     },
   });
