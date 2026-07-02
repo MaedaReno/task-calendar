@@ -5,14 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
-import { Loader2, Clock, LayoutTemplate, Trash2, Plus, AlertTriangle, Users, UserCircle } from "lucide-react";
+import { Loader2, Clock, LayoutTemplate, Trash2, Plus, AlertTriangle, UserCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import type { UserSettingsData, TaskTemplateData, SubtaskTemplate } from "@/types";
-import {
-  getWorkspaceId,
-  setWorkspaceIdAndReload,
-  DEFAULT_WORKSPACE,
-} from "@/lib/workspace-client";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettingsData | null>(null);
@@ -27,19 +22,8 @@ export default function SettingsPage() {
   const [tmplHours, setTmplHours] = useState("");
   const [tmplSubtasks, setTmplSubtasks] = useState("");
 
-  // ワークスペース（データ分離キー）
-  const [currentWs, setCurrentWs] = useState(DEFAULT_WORKSPACE);
-  const [wsInput, setWsInput] = useState(DEFAULT_WORKSPACE);
-
-  // ログイン状態（ログイン中はアカウント専用空間が自動適用される）
-  const { data: session, status } = useSession();
-  const loggedIn = status === "authenticated" && !!session?.user;
-
-  useEffect(() => {
-    const ws = getWorkspaceId();
-    setCurrentWs(ws);
-    setWsInput(ws);
-  }, []);
+  // ログインユーザー情報（利用にはログイン必須）
+  const { data: session } = useSession();
 
   useEffect(() => {
     fetch("/api/settings")
@@ -131,79 +115,12 @@ export default function SettingsPage() {
           </div>
           <h2 className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>アカウント</h2>
         </div>
-        {loggedIn ? (
-          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            <strong style={{ color: "var(--text-secondary)" }}>{session?.user?.name || session?.user?.email}</strong> でログイン中です。
-            あなた専用のワークスペースが自動で使われます。ログアウトは画面右上のメニューから行えます。
-          </p>
-        ) : (
-          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            未ログインです。画面右上の「ログイン」から Google / Discord でログインすると、
-            あなた専用のワークスペースに自動で切り替わります（任意）。
-          </p>
-        )}
+        <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          <strong style={{ color: "var(--text-secondary)" }}>{session?.user?.name || session?.user?.email}</strong> でログイン中です。
+          予定・タスク・設定はこのアカウント専用に保存され、他の人には見えません。
+          ログアウトは画面右上のメニューから行えます。
+        </p>
       </div>
-
-      {/* Workspace（データ分離） — ログアウト時のみ手動キーを表示 */}
-      {!loggedIn && (
-        <div
-          className="rounded-2xl p-5 space-y-4"
-          style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}
-        >
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: "var(--accent-violet-dim)", border: "1px solid var(--accent-violet-glow)" }}
-            >
-              <Users className="w-4 h-4" style={{ color: "var(--accent-violet)" }} />
-            </div>
-            <h2 className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>ワークスペース</h2>
-          </div>
-
-          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            ログインせずに使う場合、予定・タスク・設定は<strong style={{ color: "var(--text-secondary)" }}>ワークスペースキー</strong>ごとに分けて保存されます。
-            自分専用のキーを設定すると他の人とデータが混ざりません。同じキーを共有すれば共同で利用できます。
-            （パスワードによる保護はありません）
-          </p>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              現在のワークスペース: <span style={{ color: "var(--accent-violet)" }}>{currentWs}</span>
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                value={wsInput}
-                onChange={(e) => setWsInput(e.target.value)}
-                placeholder="例: tanaka-2026"
-                style={inputStyle}
-                maxLength={64}
-              />
-              <button
-                onClick={() => {
-                  const next = wsInput.trim() || DEFAULT_WORKSPACE;
-                  if (next === currentWs) {
-                    toast.info("同じワークスペースです");
-                    return;
-                  }
-                  // cookie/localStorage を更新してリロード（全データを切替後で再取得）
-                  setWorkspaceIdAndReload(next);
-                }}
-                className="px-4 py-2 rounded-xl text-sm font-medium transition-all shrink-0 whitespace-nowrap"
-                style={{
-                  background: "var(--accent-violet-dim)",
-                  color: "var(--accent-violet)",
-                  border: "1px solid var(--accent-violet-glow)",
-                }}
-              >
-                切り替え
-              </button>
-            </div>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              「default」は従来の共有データです。切り替えると画面が再読み込みされます。
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Work hours */}
       <div

@@ -6,7 +6,7 @@ import { getModel } from "@/lib/gemini";
 import { reportPrompt } from "@/lib/ai-prompts";
 import { handleAIError, withRetry, withTimeout, AIError } from "@/lib/ai-error";
 import { prisma } from "@/lib/prisma";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getWorkspaceId, unauthorized } from "@/lib/workspace";
 
 const ResponseSchema = z.object({
   summary: z.string(),
@@ -18,9 +18,12 @@ export async function POST(req: NextRequest) {
   try {
     const { period, from, to } = await req.json();
 
+    const workspaceId = await getWorkspaceId(req);
+    if (!workspaceId) return unauthorized();
+
     const tasks = await prisma.task.findMany({
       where: {
-        workspaceId: await getWorkspaceId(req),
+        workspaceId,
         ...(from && to
           ? {
               createdAt: {

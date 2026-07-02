@@ -4,8 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/lib/toast";
 import NavBar from "@/components/NavBar";
 import ThemeProvider from "@/components/ThemeProvider";
-import WorkspaceInit from "@/components/WorkspaceInit";
 import AuthSessionProvider from "@/components/SessionProvider";
+import AuthGate from "@/components/AuthGate";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 
@@ -24,9 +24,10 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col antialiased">
         <ThemeProvider>
           <AuthSessionProvider>
-            <WorkspaceInit />
             <NavBar />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1">
+              <AuthGate>{children}</AuthGate>
+            </main>
             <Toaster />
           </AuthSessionProvider>
         </ThemeProvider>

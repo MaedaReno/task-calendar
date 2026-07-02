@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getWorkspaceId, unauthorized } from "@/lib/workspace";
 import { z } from "zod";
 
 const SettingsSchema = z.object({
@@ -11,6 +11,7 @@ const SettingsSchema = z.object({
 
 export async function GET(req: NextRequest) {
   const workspaceId = await getWorkspaceId(req);
+  if (!workspaceId) return unauthorized();
   const settings = await prisma.userSettings.upsert({
     where: { workspaceId },
     create: { workspaceId },
@@ -26,6 +27,7 @@ export async function PUT(req: NextRequest) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
   const workspaceId = await getWorkspaceId(req);
+  if (!workspaceId) return unauthorized();
   const settings = await prisma.userSettings.upsert({
     where: { workspaceId },
     create: { workspaceId, ...parsed.data },

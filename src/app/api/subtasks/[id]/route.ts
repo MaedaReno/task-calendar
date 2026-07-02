@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getWorkspaceId, unauthorized } from "@/lib/workspace";
 import { z } from "zod";
 
 const UpdateSchema = z.object({
@@ -22,9 +22,11 @@ export async function PUT(
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
+  const workspaceId = await getWorkspaceId(req);
+  if (!workspaceId) return unauthorized();
   // 親タスク経由で自ワークスペースのサブタスクか検証
   const owned = await prisma.subTask.findFirst({
-    where: { id, task: { workspaceId: await getWorkspaceId(req) } },
+    where: { id, task: { workspaceId } },
     select: { id: true },
   });
   if (!owned) return Response.json({ error: "Not found" }, { status: 404 });
@@ -49,9 +51,11 @@ export async function DELETE(
   ctx: RouteContext<"/api/subtasks/[id]">
 ) {
   const { id } = await ctx.params;
+  const workspaceId = await getWorkspaceId(req);
+  if (!workspaceId) return unauthorized();
   // 親タスク経由で自ワークスペースのサブタスクのみ削除
   const owned = await prisma.subTask.findFirst({
-    where: { id, task: { workspaceId: await getWorkspaceId(req) } },
+    where: { id, task: { workspaceId } },
     select: { id: true },
   });
   if (!owned) return Response.json({ error: "Not found" }, { status: 404 });

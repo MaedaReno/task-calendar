@@ -6,7 +6,7 @@ import { getModel } from "@/lib/gemini";
 import { dashboardCommentPrompt } from "@/lib/ai-prompts";
 import { handleAIError, withRetry, withTimeout, AIError } from "@/lib/ai-error";
 import { prisma } from "@/lib/prisma";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getWorkspaceId, unauthorized } from "@/lib/workspace";
 import { todayJST, jstToUTC, addDays } from "@/lib/datetime";
 import type { EventData, SubTaskData } from "@/types";
 
@@ -15,6 +15,7 @@ const ResponseSchema = z.object({ comment: z.string() });
 export async function GET(req: NextRequest) {
   try {
     const workspaceId = await getWorkspaceId(req);
+    if (!workspaceId) return unauthorized();
     // JST 固定運用。ローカルTZ依存の setHours ではなく lib/datetime のJST境界を使う。
     const today = todayJST();
     const todayStart = new Date(jstToUTC(today, "00:00"));

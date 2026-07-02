@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getWorkspaceId, unauthorized } from "@/lib/workspace";
 import { z } from "zod";
 
 const SubTaskSchema = z.object({
@@ -19,9 +19,11 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
+  const workspaceId = await getWorkspaceId(req);
+  if (!workspaceId) return unauthorized();
   // 親タスクが自ワークスペースのものか検証（他人のタスクにサブタスクを足せない）
   const parent = await prisma.task.findFirst({
-    where: { id: parsed.data.taskId, workspaceId: await getWorkspaceId(req) },
+    where: { id: parsed.data.taskId, workspaceId },
     select: { id: true },
   });
   if (!parent) return Response.json({ error: "Task not found" }, { status: 404 });

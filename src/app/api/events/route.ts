@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getWorkspaceId, unauthorized } from "@/lib/workspace";
 import { z } from "zod";
 
 const EventSchema = z.object({
@@ -18,9 +18,12 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
+  const workspaceId = await getWorkspaceId(req);
+  if (!workspaceId) return unauthorized();
+
   const events = await prisma.event.findMany({
     where: {
-      workspaceId: await getWorkspaceId(req),
+      workspaceId,
       ...(from && to
         ? { start: { gte: new Date(from) }, end: { lte: new Date(to) } }
         : {}),
@@ -36,10 +39,12 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
+  const workspaceId = await getWorkspaceId(req);
+  if (!workspaceId) return unauthorized();
   const event = await prisma.event.create({
     data: {
       ...parsed.data,
-      workspaceId: await getWorkspaceId(req),
+      workspaceId,
       start: new Date(parsed.data.start),
       end: new Date(parsed.data.end),
     },

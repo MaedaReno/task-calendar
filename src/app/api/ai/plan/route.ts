@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getWorkspaceId, unauthorized } from "@/lib/workspace";
 import { schedule, type BusyBlock, type SchedulerTaskInput } from "@/lib/scheduler";
 import type { PlanResponse, Priority } from "@/types";
 
@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const workspaceId = await getWorkspaceId(req);
+    if (!workspaceId) return unauthorized();
     const task = await prisma.task.findFirst({
       where: { id: taskId, workspaceId },
       include: { subtasks: { orderBy: { order: "asc" } } },
